@@ -8,7 +8,7 @@ Grids of the demo documents to demonstrate the macros and capabilities of the pa
 
 A4 paper, with all margins set to 20mm, with document class article.
 
-![a4 demo](demo-resources/a4article_grid_resized_20.png)
+![a4 demo](demo-resources/a4articledemo_grid_resized_20.png)
 
 A3 book, with two side option, meaning different inner and outer margins. With bigger music notation rendering.
 
