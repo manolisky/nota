@@ -1,9 +1,0 @@
-\ProvidesPackage{mscoreTeX}[2021/3/31 mscoreTeX by Manolis Kyzalas]
-
-\RequirePackage{graphicx}
-
-\newcommand{\printscore}[1]{
-    \immediate\write18{mscore -o #1.pdf #1.msc*}
-    \immediate\write18{pdfcrop #1.pdf #1.pdf}
-    \includegraphics{#1.pdf}
-}

@@ -1,70 +1,89 @@
-# mscoreLaTeX
+# Nota
 
-This is a proof of concept package for an integration of MuseScore and LaTeX. Specifically including scores or notation (e.g. exercises for education, examples for academic research papers, scores for critical editions complimented with texts etc) to LaTeX documents directly from the MuseScore file (`.mscx`, `.mscz`), MusicXML (`.musicxml`, `.mxl`), or midi file (`.mid`, `.midi`) and probably more.
+**Nota** is a LaTeX package *under construction* to include properly formatted musical notation in a document.
 
-The purpose of the package is to make it easier and faster to edit notation and displaying it in your document, by just saving your changes in MuseScore and compiling your LaTeX code. You can watch a demo in the video below.
+## Examples
 
-https://user-images.githubusercontent.com/8700107/113226188-36fa7500-9298-11eb-82fc-088076c804cb.mp4
+Grids of the demo documents to demonstrate the macros and capabilities of the package. With ``\usepackage{blindtext}`` to fill the doc with text for demoing purposes.
 
-You can run the example above, if you have LaTeX and the programmes listed installed:
+A4 paper, with all margins set to 20mm, with document class article.
 
-- the MuseScore command line (`mscore`) which is installed with the MuseScore gui app
-- `xelatex` (i had some problems with pdftex but they seem solvable)
-- `pdfcrop`, which comes with the complete installation of LaTeX (e.g. mikTeX or macTeX) otherwise can be downloaded from CTAN
+![a4 demo](demo-resources/a4article_grid_resized_20.png)
 
-To compile the document you need run `xelatex --shell-escape main.tex`. The `--shell-escape` option is needed because the macro `\printscore{filename}` needs to execute the `mscore -o` and `pdfcrop` cli commands.
+A3 book, with two side option, meaning different inner and outer margins. With bigger music notation rendering.
 
-## how it works
+![a3 demo](demo-resources/a3twosidedemo_grid_resized_20.png)
 
-The package `mscoreTeX.sty` provides the macro `\printscore{filename}`. 
+### How to run the demo
 
-```LaTeX
-\newcommand{\printscore}[1]{
-    \immediate\write18{mscore -o #1.pdf #1.msc*}
-    \immediate\write18{pdfcrop #1.pdf #1.pdf}
-    \includegraphics{#1.pdf}
-}
-```
+To run this demo you need **python**, **LaTeX** and optionally **MuseScore cli** (comes with Musescore installation). You can simply run ``make`` in the terminal and build steps are automated there. If you don't have MuseScore, you should comment out the appropriate line in the ``.tex`` files where ``\includescore{*.mscz}`` is evoked. In the ``makefile`` it uses ``pdflatex`` to compile the latex files, but you can change it to the compiler of your liking (``xelatex``, ``lualatex``). I have tested them all three.
 
-Tha macro then runs two cli commands.
+## How it works
 
-```bash
-mscore -o #1.pdf #1.msc*
-```
+The package uses the **Verovio** library to render scores and automatically passes the appropriate options to embed them properly formatted in your LaTeX doc with auto generated LaTeX code.
 
-that converts the MuseScore file to pdf, just like it would do if you exported from the gui app, and
+### Techologies used
 
-```bash
-pdfcrop #1.pdf #1.pdf
-```
-that crops the white space of the pdf, to make it ready for inclusion as a graphic.
+- **LaTeX** [[website](https://www.latex-project.org)] [[github](https://github.com/latex3)] LaTeX is a high-quality typesetting system; it includes features designed for the production of technical and scientific documentation. LaTeX is the de facto standard for the communication and publication of scientific documents. LaTeX is available as free software.
+    
+    - Required LaTeX Packages: **graphicx** [[ctan](https://ctan.org/pkg/graphicx)], **pdfpages** [[ctan](https://ctan.org/pkg/pdfpages)], **kvoptions** [[ctan](https://ctan.org/pkg/kvoptions?lang=en)]
 
-After that, `\includegraphics{...}` is used, from the `graphicx.sty` package, display the graphics.
+- **Verovio** [[website](https://www.verovio.org/index.xhtml)] [[github](https://github.com/rism-digital/verovio)] Verovio is a fast, portable and lightweight library for engraving Music Encoding Initiative (MEI) digital scores into SVG images. Verovio also contains on-the-fly converters to render Plaine & Easie Code, Humdrum, Musedata, MusicXML, EsAC, and ABC digital scores.
 
-In my example I put the notation inside the figure environment, but because they are just graphics they are really versatile.
+- **The Music Encoding Initiative - MEI** [[website](https://music-encoding.org)] [[github](https://github.com/music-encoding)] The Music Encoding Initiative (MEI) is an open-source effort to define a system for encoding musical documents in a machine-readable structure. MEI brings together specialists from various music research communities, including technologists, librarians, historians, and theorists in a common effort to define best practices for representing a broad range of musical documents and structures. 
 
-## ideas for improvment
+- **SMuFL** [[website](https://w3c.github.io/smufl/latest/)] [[github](https://github.com/w3c/smufl)] SMuFL is a specification that provides a standard way of mapping the thousands of musical symbols required by conventional music notation into the Private Use Area in Unicode’s Basic Multilingual Plane for a single (format-independent) font.
 
-### file handling
+- **MuseScore** [[website](https://musescore.org/en)] [[github](https://github.com/musescore/MuseScore)] MuseScore is an open source and free music notation software. Used through the mscore cli interface.
 
-The way the package currently handles files and filenames is not good at all, but it works in a controlled environment.
+### Design and use
 
-### notation formatting
+#### ``\usepackage[font=<font>, unit=<4.5-12>]{nota}``
 
-The formatting of the notation to be included should somehow be aware of the current document format. For example:
- 
-- use the same text font, and font size
-- notation size should depend on font size
-- same margins etc.
+- ``font`` **:** Select one of **SMuFL** fonts included in Verovio. Fonts supported: ``Leipzig``, ``Bravura``, ``Gootville``, ``Leland``. See [SMuFL fonts](https://book.verovio.org/advanced-topics/smufl.html). *Default in package and Verovio is ``Leipzig``.*
 
-This can be done by programmatically editing the MusicXML, or MuseScore files properties before converting to pdf, or even better to have a specific style file for MuseScore, that gets called with the option `mscore -S`, so the original files are not changed.
+- ``unit`` **:** The MEI unit (1⁄2 of the distance between the staff lines) (min: ``4.5``; max: ``12.0``) See **Verovio** docs: [Units and page dimensions](https://book.verovio.org/advanced-topics/controlling-the-svg-output.html#units-and-page-dimensions) | [Scaling](https://book.verovio.org/advanced-topics/controlling-the-svg-output.html#scaling). *Default in the package is ``6.875``.*
 
-Also to be a respectable package the above should be package options, or have a setup macro, to configure important formatting options like the notation font to be used.
+#### ``\includescore{<filepath>}``
 
-### speed
+Include the score in a "inline" manner, where systems are broken down to individual graphics and are rendered in the document in between text, with a ``\flushbottom`` formatting to fill the pages. No header display.
 
-Right now as it stands, the speed is ok for a handful of MuseScore files, but the `mscore -o` command actually opens an instance of MuseScore without the gui, and would be really slow at processing a lot of files independently. That may be solved with the batch process command that the `mscore` cli provides, but the way to implement it is leagues above me.
+#### ``\fullscore{<filepath>}``
 
-### contributions
+Include the score as complete pages, meaning each page is a separate graphics, leaving the complete formatting of the page to Verovio. With header.
 
-Both the MuseScore and the LaTeX communities could be really helpful in making this a really useful package for musicologist, music historians and musicians, as i alone am not well versed to make a robust LaTeX package, or to efficiently manipulate the XML files of MuseScore.
+#### ``\examplescore{<filepath>}``
+
+Example score, should be used for smaller examples, for use in floating environments. Renders full page, and crops it down, should honor custom system breaks.
+
+### Supprted input file formats
+
+All the types that **Verovio** supports should accepted: *MEI* ``.mei``, *Humdrum* ``.krn``, *Musicxml* ``.mxl``, *Plain and Easie* ``.pae``, *ABC* ``.abc``, *CMME* ``.cmme.xml``. The package supports *MuseScore* ``.mscz`` files, using the mscore cli to first convert it to *musicxml* and then sends over to verovio for rendering. Sibelius users use the [sibmei](https://github.com/music-encoding/sibmei) plugin for Sibelius to export to *.mei* file or export to *musicXML*, although both of these options seem to not be available in their free tier option called *Sibelius First*.
+
+## to - do
+
+- [x] mscore files directly.
+- [x] manual verovio option settings from sty package options and 
+- [ ] macro options (like independent margins for scores)
+- [ ] dynamic unit setting?
+- [x] add and test proper "example" functionality
+- [ ] a way to check if the produced files are up to date, and should not build them again, probably using the .aux file.
+
+- Demos
+    - [x] simple article with even margins
+    - [x] book twoside
+    - [ ] a3paper with independent score margin
+
+## Bugs or Limitations
+
+- Verovio limitations
+    
+    - Verovio doesnt support "two side" style render with odd and even margins. ← *this has been overcome with a workaround.*
+
+    - supports only up to 50mm (500px) margins ← *this has been overcome with a workaround.*
+
+    - lyrics font need a fix, it renders incorrectly after the cairo py lib pass
+
+- my limitations
+    
+    - Not sure how to properly consolidate it to a standalone LaTeX package yet!

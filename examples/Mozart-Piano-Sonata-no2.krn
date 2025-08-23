@@ -1,0 +1,49 @@
+!!!COM: Mozart, Wolfgang Amadeus
+!!!OTL: Piano Sonata No. 2 in F major
+!!!OMV: 1
+!!!SCT1: K1 280
+!!!SCT2: K6 189e
+!!!OMD: Allegro assai
+**kern	**kern	**dynam
+*staff2	*staff1	*staff1/2
+*clefF4	*clefG2	*
+*k[b-]	*k[b-]	*
+*F:	*F:	*
+*M3/4	*M3/4	*
+*MM152	*MM152	*
+=1-	=1-	=1-
+4FF 4F	4c: 4f: 4a: 4cc:	f
+4C	4a/ 4cc/	.
+4AA	4a/ 4cc/	.
+=2	=2	=2
+4FF	4.a/ 4.cc/	.
+4FFF	.	.
+.	(16ddLL	.
+.	16ccJJ	.
+4r	16b-LL	.
+.	16a	.
+.	16g	.
+.	16fJJ	.
+=3	=3	=3
+8F 8AL	4ff	.
+8F 8A	.	.
+8F 8G 8B-	4ee	.
+8F 8G 8B-	.	.
+8F 8A 8c	4ee-)	.
+8F 8A 8cJ	.	.
+=4	=4	=4
+8F 8B- 8dL	4dd	.
+8F 8B- 8d	.	.
+8F 8B- 8d	4r	.
+8F 8B- 8d	.	.
+8F 8B- 8d	4r	.
+8F 8B- 8dJ	.	.
+=5	=5	=5
+8F 8G 8eL	(8ccL	p
+8F 8G 8e	8b-J)	.
+8F 8G 8e	4b-'	.
+8F 8G 8e	.	.
+8F 8G 8e	4r	.
+8F 8G 8eJ	.	.
+=6	=6	=6
+*-	*-	*-

@@ -1,6 +1,23 @@
+# Gitignore for Nota project
+
+# LaTeX generated files
 *.aux
-*.dvi
-*.lof
 *.log
-*.DS_Store
-mscores/.mscbackup/*
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+
+# Python virtual environment
+.venv/
+
+# Auto-generated nota files
+*notaaux/
+
+# Auto-generated other files
+*_grid.png
+
+# macOS specific files
+.DS_Store
+pdf_to_grid.sh
+resize_image.sh

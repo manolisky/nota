@@ -1,0 +1,67 @@
+\documentclass[
+    a4paper,
+    % twoside
+]{article}
+
+% Load our new Nota package
+\usepackage[font=Leland]{nota/nota}
+
+% blind text for testing layout
+\usepackage{blindtext}
+
+\usepackage[
+    margin=20mm
+]{geometry}
+
+\begin{document}
+
+\title{Test for Nota \LaTeX package}
+\maketitle
+
+\tableofcontents
+
+\section{\texttt{\textbackslash includescore\{\}} demo with \textbf{.mei}}
+
+    \blindtext[1]
+
+    \includescore{examples/Schumann-Clara_Romanze-ohne-Opuszahl_a-Moll-basic.mei}
+
+    \blindtext[1]
+
+\section{\texttt{\textbackslash fullscore\{\}} demo with \textbf{.mei}}
+
+    \blindtext[1]
+
+    \fullscore{examples/Baumann-Ludwig_Mondnacht-am-Meer.mei}
+
+    \blindtext[1]
+
+\section{MusicXML \textbf{.mxl} demo}
+
+    \blindtext[1]
+
+    \includescore{examples/BWV_846.mxl}
+
+    \blindtext[1]
+
+\section{Humdrum \textbf{.krn} and \texttt{\textbackslash examplescore\{\}} demo in figure}
+
+    \blindtext[1]
+
+    \begin{figure}[h!]
+        \centering
+        \examplescore{examples/Mozart-Piano-Sonata-no2.krn}
+        \caption{Humdrum and Example demo}
+    \end{figure}
+
+    \blindtext[1]
+
+\section{MuseScore \textbf{.mscz} demo}
+
+    \blindtext[1]
+
+    \includescore{examples/BWV_846.mscz}
+
+    \blindtext[1]
+
+\end{document}

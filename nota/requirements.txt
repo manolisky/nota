@@ -1,0 +1,5 @@
+verovio
+Pillow
+reportlab
+cairosvg
+PyPDF2
