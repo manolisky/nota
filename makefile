@@ -3,7 +3,6 @@
 
 # --- Variables ---
 DOCS        := a3twosidedemo a4articledemo
-# DOCS        := a3twosidedemo a4article
 VENV_DIR    := .venv
 PYTHON      := $(VENV_DIR)/bin/python
 LATEX       := pdflatex
@@ -28,13 +27,15 @@ pdfs: $(addsuffix .pdf,$(DOCS))
 grids: $(addprefix demo-resources/,$(addsuffix _grid.png,$(DOCS)))
 resize_grid: $(addprefix demo-resources/,$(addsuffix _resized_$(RESIZE_PCT).png,$(DOCS))) grids
 
-# Pattern rule: build PDF from TEX (3-pass system)
+# Pattern rule: build PDF from TEX (4-pass system)
 %.pdf: %.tex
-	@echo "==> (1/3) Building $@: LaTeX pass 1"
+	@echo "==> (1/4) Building $@: LaTeX pass 1"
 	$(LATEX) -jobname=$* $<
-	@echo "==> (2/3) Building $@: Python rendering"
+	@echo "==> (2/4) Building $@: Python rendering"
 	$(PYTHON) $(RENDER) $*
-	@echo "==> (3/3) Building $@: LaTeX pass 2"
+	@echo "==> (3/4) Building $@: LaTeX pass 2"
+	$(LATEX) -jobname=$* $<
+	@echo "==> (4/4) Building $@: LaTeX pass 3"
 	$(LATEX) -jobname=$* $<
 
 # Pattern rule: create grid PNG from PDF
