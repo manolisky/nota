@@ -1,6 +1,5 @@
 import sys
 import os
-import json
 import tempfile
 import re
 from pathlib import Path
@@ -16,16 +15,24 @@ import cairosvg
 from PyPDF2 import PdfMerger
 import subprocess
 
-def parse_latex_dimension(dim_str: str) -> float:
-    """Parses a LaTeX dimension string (e.g., '430.0pt') and returns the float value in points."""
+# auxiliary function needed to render string value in pt from latex from aux file to int pixel for Verovio.
+def parse_latex_dimension(dim_str: str) -> int:
+    
+    # match string in pt -> to float in pt
     match = re.match(r"([0-9.]+)", dim_str)
-    if match:
-        return float(match.group(1))
-    return 0.0 # Default or error value
+    
+    # string in pt -> to float in pt
+    dimension_in_pt = float(match.group(1))
 
-def pt_to_mm(pt_value: float) -> float:
-    """Converts a value from points (pt) to millimeters (mm)."""
-    return pt_value * 0.3527
+    # float in pt -> to float in mm
+    dimension_in_mm = dimension_in_pt * 0.3527
+    
+    # get float in mm -> to int in pixels
+    dimension_in_pixels = int(dimension_in_mm * 10) 
+    
+    if dimension_in_pixels:
+        return dimension_in_pixels
+    return 0.0 # Default or error value
 
 def render_score(input_file: Path, output_pdf: Path, verovio_options: dict):
     """Renders a single file to a PDF using a specific set of Verovio options."""
@@ -131,22 +138,18 @@ def main():
         print(f"- Processing score {score_id}: type '{score_type}', path '{file_path_str}'")
 
         input_file = project_root / file_path_str
-        
-        # Parse dimensions from LaTeX
-        paperwidth_pt = parse_latex_dimension(paperwidth_str)
-        paperheight_pt = parse_latex_dimension(paperheight_str)
-        topmargin_pt = parse_latex_dimension(topmargin_str)
-        bottommargin_pt = parse_latex_dimension(bottommargin_str)
-        oddsidemargin_pt = parse_latex_dimension(oddsidemargin_str)
-        evensidemargin_pt = parse_latex_dimension(evensidemargin_str)
 
-        # Convert all relevant dimensions to millimeters for Verovio
-        paperwidth_mm = pt_to_mm(paperwidth_pt)
-        paperheight_mm = pt_to_mm(paperheight_pt)
-        topmargin_mm = pt_to_mm(topmargin_pt)
-        bottommargin_mm = pt_to_mm(bottommargin_pt)
-        oddsidemargin_mm = pt_to_mm(oddsidemargin_pt)
-        evensidemargin_mm = pt_to_mm(evensidemargin_pt)
+        # pixel values for Verovio
+        paperwidth_px = parse_latex_dimension(paperwidth_str)
+        paperheight_px = parse_latex_dimension(paperheight_str)
+        topmargin_px = parse_latex_dimension(topmargin_str)
+        bottommargin_px = parse_latex_dimension(bottommargin_str)
+        oddsidemargin_px = parse_latex_dimension(oddsidemargin_str)
+        evensidemargin_px = parse_latex_dimension(evensidemargin_str)
+
+        # derive text width and height
+        textwidth_px = paperwidth_px - oddsidemargin_px - evensidemargin_px
+        textheight_px = paperheight_px - topmargin_px - bottommargin_px
 
         # Construct Verovio options dynamically
         verovio_options = {
@@ -165,7 +168,7 @@ def main():
             verovio_options["header"] = "none"
 
             verovio_options["pageHeight"] = 120
-            verovio_options["pageWidth"] = (paperwidth_mm-oddsidemargin_mm-evensidemargin_mm+10) * 10 
+            verovio_options["pageWidth"] = textwidth_px + 100 
             verovio_options["adjustPageHeight"] = True
             
             verovio_options["pageMarginTop"] = 0
@@ -173,8 +176,8 @@ def main():
 
         elif score_type == 'fullscore':
 
-            verovio_options["pageWidth"] = (paperwidth_mm-oddsidemargin_mm-evensidemargin_mm+10) * 10 
-            verovio_options["pageHeight"] = (paperheight_mm-topmargin_mm-bottommargin_mm) * 10
+            verovio_options["pageWidth"] = textwidth_px + 100 
+            verovio_options["pageHeight"] = textheight_px + 100
             
             verovio_options["justifyVertically"] = True
             verovio_options["adjustPageHeight"] = True
@@ -184,10 +187,10 @@ def main():
             verovio_options["header"] = "none"
             verovio_options["breaks"] = "encoded"
 
-            verovio_options["pageWidth"] = paperwidth_mm * 10 
+            verovio_options["pageWidth"] = paperheight_px 
 
-            verovio_options["pageMarginLeft"] = oddsidemargin_mm * 10
-            verovio_options["pageMarginRight"] = evensidemargin_mm * 10
+            verovio_options["pageMarginLeft"] = oddsidemargin_px
+            verovio_options["pageMarginRight"] = evensidemargin_px
             
             verovio_options["adjustPageHeight"] = True
             verovio_options["adjustPageWidth"] = True
