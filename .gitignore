@@ -7,12 +7,18 @@
 *.fls
 *.synctex.gz
 *.toc
+*.nota.aux
 
 # Python virtual environment
 .venv/
 
 # Auto-generated nota files
 *notaaux/
+*-nota/
+
+# Go build products
+bin/
+scripts/nota-render/nota-render
 
 # Auto-generated other files
 *_grid.png

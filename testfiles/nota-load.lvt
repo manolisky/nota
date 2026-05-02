@@ -1,0 +1,9 @@
+\input regression-test.tex
+\START
+\documentclass{article}
+\usepackage{nota}
+\begin{document}
+\typeout{NOTA-TEST: package loaded}
+Hello.
+\end{document}
+\END

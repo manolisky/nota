@@ -1,0 +1,9 @@
+\input regression-test.tex
+\START
+\documentclass{article}
+\usepackage{nota}
+\begin{document}
+\includescore{examples/sonata15-1-basic.mei}
+\typeout{NOTA-TEST: request written}
+\end{document}
+\END

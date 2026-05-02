@@ -1,0 +1,109 @@
+% Nota Package: A system for including formatted music scores in LaTeX.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{nota}[2026/05/03 v1.1 Nota Package]
+
+\makeatletter
+
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{family=nota, prefix=nota@}
+
+\DeclareStringOption[6.875]{unit}
+\DeclareStringOption[Leipzig]{font}
+
+\ProcessKeyvalOptions*
+
+\RequirePackage{graphicx}
+
+% Generated score assets live next to the main document build products.
+\graphicspath{{\jobname-nota/}}
+
+\newwrite\nota@requestsfile
+\newcounter{nota@score}
+
+\newcommand{\nota@render}[3]{%
+    % #1: score type (inline, fullscore, example)
+    % #2: LaTeX formatting to apply around the generated include
+    % #3: input score path
+    \newdimen\notapaperwidth
+    \notapaperwidth=\paperwidth
+
+    \newdimen\notapaperheight
+    \notapaperheight=\paperheight
+
+    \newdimen\notatopmargin
+    \notatopmargin=\dimexpr1in+\topmargin+\headheight+\headsep\relax
+
+    \newdimen\notabottommargin
+    \notabottommargin=\dimexpr\paperheight-(1in+\topmargin+\headheight+\headsep+\textheight)\relax
+
+    \newdimen\notaleftmargin
+    \notaleftmargin=\dimexpr1in+\oddsidemargin\relax
+
+    \newdimen\notarightmargin
+    \notarightmargin=\dimexpr\paperwidth-(1in+\oddsidemargin+\textwidth)\relax
+
+    \stepcounter{nota@score}%
+
+    % Always write the request so nota-render can validate cache freshness even
+    % when generated includes already exist.
+    % Format: ID|TYPE|PATH|FONT|UNIT|PAPERWIDTH|PAPERHEIGHT|TOP|BOTTOM|RIGHT|LEFT
+    \immediate\write\nota@requestsfile{\the\value{nota@score}|#1|#3|%
+        \nota@font|%
+        \nota@unit|%
+        \the\notapaperwidth|%
+        \the\notapaperheight|%
+        \the\notatopmargin|%
+        \the\notabottommargin|%
+        \the\notarightmargin|%
+        \the\notaleftmargin%
+    }%
+
+    \IfFileExists{\jobname-nota/nota-score-\the\value{nota@score}.tex}
+    {%
+        \begingroup
+            #2%
+            \input{\jobname-nota/nota-score-\the\value{nota@score}.tex}%
+        \endgroup
+    }%
+    {%
+        \texttt{[Nota: Score \the\value{nota@score} processing...]}%
+    }%
+}
+
+\newcommand{\includescore}[1]{%
+    \vspace{5ex}%
+    \raggedbottom
+    \nota@render{inline}{%
+        \centering
+        \setlength{\parskip}{2ex plus 5ex}%
+        \setlength{\parindent}{0mm}%
+        \flushbottom
+    }{#1}%
+    \raggedbottom
+    \vspace{5ex}%
+}
+
+\newcommand{\fullscore}[1]{%
+    \nota@render{fullscore}{%
+        \setlength{\parindent}{0mm}%
+    }{#1}%
+    \vspace{5ex}%
+}
+
+\newcommand{\examplescore}[1]{%
+    \nota@render{example}{%
+        \setlength{\parindent}{0mm}%
+    }{#1}%
+}
+
+\AtBeginDocument{%
+    \immediate\openout\nota@requestsfile=\jobname.nota.aux
+}
+
+\AtEndDocument{%
+    \immediate\closeout\nota@requestsfile
+}
+
+\makeatother
+
+\endinput

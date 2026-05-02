@@ -1,88 +1,85 @@
-# Makefile for MEI+LaTeX Project
-# Builds a3twosidedemo.tex and a4article.tex with post-processing
+# Makefile for the Nota LaTeX package and renderer.
 
-# --- Variables ---
 DOCS        := a3twosidedemo a4articledemo
-VENV_DIR    := .venv
-PYTHON      := $(VENV_DIR)/bin/python
 LATEX       := pdflatex
-RENDER      := nota/renderScores.py
+RENDER_BIN  := scripts/nota-render/nota-render
+RENDER      := $(RENDER_BIN)
 GRID_SH     := ./demo-resources/pdf_to_grid.sh
 RESIZE_SH   := ./demo-resources/resize_image.sh
 RESIZE_PCT  := 20
+TEXMFHOME   := $(shell kpsewhich -var-value=TEXMFHOME 2>/dev/null || echo "$$HOME/texmf")
+LOCAL_BIN   := $(HOME)/.local/bin
 
-# --- Targets ---
-.PHONY: all pdfs grids resize_grid clean setup help
+.PHONY: all essentials pdfs grids resize_grid clean clean-generated setup renderer test install-local help
 
-# Default target: build all documents no post-processing
 essentials: pdfs
 	@echo "Build complete!"
 
-# build all documents with post-processing
 all: pdfs resize_grid
 	@echo "Build complete!"
 
-# Convenience targets
-pdfs: $(addsuffix .pdf,$(DOCS))
+renderer:
+	cd scripts/nota-render && go build -o nota-render ./cmd/nota-render
+
+test:
+	cd scripts/nota-render && go test ./...
+	l3build check
+
+pdfs: renderer $(addsuffix .pdf,$(DOCS))
 grids: $(addprefix demo-resources/,$(addsuffix _grid.png,$(DOCS)))
 resize_grid: $(addprefix demo-resources/,$(addsuffix _resized_$(RESIZE_PCT).png,$(DOCS))) grids
 
-# Pattern rule: build PDF from TEX (4-pass system)
 %.pdf: %.tex
 	@echo "==> (1/4) Building $@: LaTeX pass 1"
 	$(LATEX) -jobname=$* $<
-	@echo "==> (2/4) Building $@: Python rendering"
-	$(PYTHON) $(RENDER) $*
+	@echo "==> (2/4) Building $@: Nota rendering"
+	$(RENDER) $*
 	@echo "==> (3/4) Building $@: LaTeX pass 2"
 	$(LATEX) -jobname=$* $<
 	@echo "==> (4/4) Building $@: LaTeX pass 3"
 	$(LATEX) -jobname=$* $<
 
-# Pattern rule: create grid PNG from PDF
 demo-resources/%_grid.png: %.pdf
 	@echo "==> Creating grid layout: demo-resources/$*"
 	$(GRID_SH) $< demo-resources/$*_grid.png
 
-# Pattern rule: create resized PNG from _grid pngs (configurable percentage)
 demo-resources/%_resized_$(RESIZE_PCT).png: demo-resources/%_grid.png
 	@echo "==> Creating resized image: demo-resources/$*_resized_$(RESIZE_PCT).png ($(RESIZE_PCT)%)"
 	$(RESIZE_SH) demo-resources/$*_grid.png $(RESIZE_PCT)
 
-# Clean up all generated files
-clean:
-	@echo "--- Cleaning up generated files..."
-	rm -rf *notaaux
-	rm -f *.log *.aux *.out *.scores.aux
-	rm -f *.pdf demo-resources/*.png temp_*.png
+install-local: renderer
+	@echo "==> Installing nota.sty into $(TEXMFHOME)"
+	mkdir -p "$(TEXMFHOME)/tex/latex/nota"
+	cp nota.sty "$(TEXMFHOME)/tex/latex/nota/nota.sty"
+	@echo "==> Installing nota-render into $(LOCAL_BIN)"
+	mkdir -p "$(LOCAL_BIN)"
+	cp "$(RENDER_BIN)" "$(LOCAL_BIN)/nota-render"
+	chmod +x "$(LOCAL_BIN)/nota-render"
+	mktexlsr "$(TEXMFHOME)" >/dev/null 2>&1 || true
+	@echo "==> Installed. Check with: kpsewhich nota.sty && nota-render --version"
 
-# Setup the virtual environment
-setup: $(VENV_DIR)
+clean-generated:
+	@echo "--- Cleaning generated Nota and LaTeX files..."
+	rm -rf *-nota *notaaux
+	rm -f *.log *.aux *.out *.toc *.nota.aux *.scores.aux *.pdf demo-resources/*.png temp_*.png
 
-$(VENV_DIR): nota/requirements.txt
-	@echo "--- Creating Python virtual environment at $(VENV_DIR)..."
-	python3 -m venv $(VENV_DIR)
-	@echo "--- Installing dependencies..."
-	$(VENV_DIR)/bin/pip install -r nota/requirements.txt
-	@touch $(VENV_DIR)
+clean: clean-generated
+	rm -f "$(RENDER_BIN)"
 
-# Show available targets
+setup:
+	@echo "No Python setup is used. Install Go to build scripts/nota-render."
+
 help:
-	@echo "MEI+LaTeX Makefile - Available targets:"
+	@echo "Nota Makefile - Available targets:"
 	@echo ""
-	@echo "  all     - Build everything (PDFs + grids + resize_grid)"
-	@echo "  pdfs    - Build PDF files only ($(DOCS))"
-	@echo "  grids   - Generate grid PNG montages from PDFs"
-	@echo "  resize_grid  - Generate 50% resized PNG previews (first page)"
-	@echo "  clean   - Remove all generated files"
-	@echo "  setup   - Create Python virtual environment"
-	@echo "  help    - Show this help message"
-	@echo ""
-	@echo "Individual targets:"
-	@echo "  <name>.pdf              - Build specific PDF"
-	@echo "  <name>_grid.png         - Generate grid layout"
-	@echo "  <name>_resized_50.png   - Generate 50% preview"
+	@echo "  all            - Build demo PDFs and preview grids"
+	@echo "  essentials     - Build demo PDFs only"
+	@echo "  renderer       - Build the Go nota-render CLI"
+	@echo "  test           - Run Go tests and l3build tests"
+	@echo "  install-local  - Install nota.sty and nota-render for local testing"
+	@echo "  clean          - Remove generated files and renderer binary"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make                    # Build everything"
-	@echo "  make a3twosidedemo.pdf  # Build just a3twosidedemo.pdf"
-	@echo "  make grids              # Create all grid layouts"
+	@echo "  make renderer"
+	@echo "  make a4articledemo.pdf"
+	@echo "  make install-local"
