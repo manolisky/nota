@@ -8,6 +8,7 @@
 *.synctex.gz
 *.toc
 *.nota.aux
+*.out
 
 # Python virtual environment
 .venv/
@@ -15,10 +16,14 @@
 # Auto-generated nota files
 *notaaux/
 *-nota/
+examples/*/main.pdf
 
 # Go build products
 bin/
 scripts/nota-render/nota-render
+
+# l3build generated workspace
+build/
 
 # Auto-generated other files
 *_grid.png

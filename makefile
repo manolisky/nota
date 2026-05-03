@@ -1,21 +1,21 @@
 # Makefile for the Nota LaTeX package and renderer.
 
-DOCS        := a3twosidedemo a4articledemo
-LATEX       := pdflatex
+EXAMPLES    := examples/a3example examples/a4example
+LATEX       := xelatex
 RENDER_BIN  := scripts/nota-render/nota-render
-RENDER      := $(RENDER_BIN)
+RENDER      := ../../$(RENDER_BIN)
 GRID_SH     := ./demo-resources/pdf_to_grid.sh
 RESIZE_SH   := ./demo-resources/resize_image.sh
 RESIZE_PCT  := 20
 TEXMFHOME   := $(shell kpsewhich -var-value=TEXMFHOME 2>/dev/null || echo "$$HOME/texmf")
 LOCAL_BIN   := $(HOME)/.local/bin
 
-.PHONY: all essentials pdfs grids resize_grid clean clean-generated setup renderer test install-local help
+.PHONY: all essentials examples pdfs grids resize_grid clean clean-generated setup renderer test install-local help
 
-essentials: pdfs
+essentials: examples
 	@echo "Build complete!"
 
-all: pdfs resize_grid
+all: examples resize_grid
 	@echo "Build complete!"
 
 renderer:
@@ -25,27 +25,29 @@ test:
 	cd scripts/nota-render && go test ./...
 	l3build check
 
-pdfs: renderer $(addsuffix .pdf,$(DOCS))
-grids: $(addprefix demo-resources/,$(addsuffix _grid.png,$(DOCS)))
-resize_grid: $(addprefix demo-resources/,$(addsuffix _resized_$(RESIZE_PCT).png,$(DOCS))) grids
+examples: renderer $(addsuffix /main.pdf,$(EXAMPLES))
+pdfs: examples
 
-%.pdf: %.tex
+examples/%/main.pdf: examples/%/main.tex
 	@echo "==> (1/4) Building $@: LaTeX pass 1"
-	$(LATEX) -jobname=$* $<
+	cd $(dir $<) && TEXINPUTS=.:../..: $(LATEX) -jobname=main main.tex
 	@echo "==> (2/4) Building $@: Nota rendering"
-	$(RENDER) $*
+	cd $(dir $<) && $(RENDER) main
 	@echo "==> (3/4) Building $@: LaTeX pass 2"
-	$(LATEX) -jobname=$* $<
+	cd $(dir $<) && TEXINPUTS=.:../..: $(LATEX) -jobname=main main.tex
 	@echo "==> (4/4) Building $@: LaTeX pass 3"
-	$(LATEX) -jobname=$* $<
+	cd $(dir $<) && TEXINPUTS=.:../..: $(LATEX) -jobname=main main.tex
 
-demo-resources/%_grid.png: %.pdf
-	@echo "==> Creating grid layout: demo-resources/$*"
-	$(GRID_SH) $< demo-resources/$*_grid.png
+grids: $(addsuffix /main_grid.png,$(EXAMPLES))
+resize_grid: $(addsuffix /main_grid_resized_$(RESIZE_PCT).png,$(EXAMPLES)) grids
 
-demo-resources/%_resized_$(RESIZE_PCT).png: demo-resources/%_grid.png
-	@echo "==> Creating resized image: demo-resources/$*_resized_$(RESIZE_PCT).png ($(RESIZE_PCT)%)"
-	$(RESIZE_SH) demo-resources/$*_grid.png $(RESIZE_PCT)
+examples/%/main_grid.png: examples/%/main.pdf
+	@echo "==> Creating grid layout: $@"
+	$(GRID_SH) $< $@
+
+examples/%/main_grid_resized_$(RESIZE_PCT).png: examples/%/main_grid.png
+	@echo "==> Creating resized image: $@ ($(RESIZE_PCT)%)"
+	$(RESIZE_SH) $< $(RESIZE_PCT)
 
 install-local: renderer
 	@echo "==> Installing nota.sty into $(TEXMFHOME)"
@@ -59,9 +61,11 @@ install-local: renderer
 	@echo "==> Installed. Check with: kpsewhich nota.sty && nota-render --version"
 
 clean-generated:
-	@echo "--- Cleaning generated Nota and LaTeX files..."
-	rm -rf *-nota *notaaux
-	rm -f *.log *.aux *.out *.toc *.nota.aux *.scores.aux *.pdf demo-resources/*.png temp_*.png
+	@echo "--- Cleaning generated Nota and LaTeX example files..."
+	rm -rf examples/*/main-nota
+	rm -f examples/*/main.aux examples/*/main.log examples/*/main.out examples/*/main.toc
+	rm -f examples/*/main.nota.aux examples/*/main.pdf examples/*/main_grid*.png
+	rm -f demo-resources/*.png temp_*.png
 
 clean: clean-generated
 	rm -f "$(RENDER_BIN)"
@@ -72,8 +76,9 @@ setup:
 help:
 	@echo "Nota Makefile - Available targets:"
 	@echo ""
-	@echo "  all            - Build demo PDFs and preview grids"
-	@echo "  essentials     - Build demo PDFs only"
+	@echo "  all            - Build examples and preview grids"
+	@echo "  essentials     - Build examples only"
+	@echo "  examples       - Build self-contained example PDFs"
 	@echo "  renderer       - Build the Go nota-render CLI"
 	@echo "  test           - Run Go tests and l3build tests"
 	@echo "  install-local  - Install nota.sty and nota-render for local testing"
@@ -81,5 +86,5 @@ help:
 	@echo ""
 	@echo "Examples:"
 	@echo "  make renderer"
-	@echo "  make a4articledemo.pdf"
-	@echo "  make install-local"
+	@echo "  make examples"
+	@echo "  cd examples/a4example && xelatex main.tex && nota-render main && xelatex main.tex && xelatex main.tex"

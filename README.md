@@ -17,18 +17,18 @@ artifact; PDF files are generated for normal `graphicx` inclusion in LaTeX.
 ```tex
 \usepackage[font=Leipzig,unit=6.875]{nota}
 
-\includescore{examples/score.mei}
-\fullscore{examples/full-score.mei}
-\examplescore{examples/example.krn}
+\includescore{score.mei}
+\fullscore{full-score.mei}
+\examplescore{example.krn}
 ```
 
 Build a document with:
 
 ```sh
-pdflatex paper
+xelatex paper.tex
 nota-render paper
-pdflatex paper
-pdflatex paper
+xelatex paper.tex
+xelatex paper.tex
 ```
 
 Generated files:
@@ -37,9 +37,46 @@ Generated files:
 paper.nota.aux
 paper-nota/
   nota-score-1-page-1.svg
-  nota-score-1.pdf
+  nota-score-1-page-1.pdf
   nota-score-1.tex
   nota-cache.json
+```
+
+## Examples
+
+The example documents are structured as small real LaTeX projects:
+
+```text
+examples/
+  shared_score_files/
+  a4example/
+    main.tex
+  a3example/
+    main.tex
+```
+
+Build both examples from the repo root:
+
+```sh
+make examples
+```
+
+Or build one example manually:
+
+```sh
+cd examples/a4example
+xelatex main.tex
+nota-render main
+xelatex main.tex
+xelatex main.tex
+```
+
+The generated files stay inside that example project:
+
+```text
+main.nota.aux
+main-nota/
+main.pdf
 ```
 
 ## Local Development
@@ -50,10 +87,10 @@ Build the renderer:
 make renderer
 ```
 
-Build the demos:
+Build the examples:
 
 ```sh
-make essentials
+make examples
 ```
 
 Install into your local TeX tree for testing:
