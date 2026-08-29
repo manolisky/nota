@@ -12,6 +12,8 @@ Nota uses a two-step build:
 The renderer is a Go CLI. SVG pages are the canonical render artifact; PDF
 files are generated for `graphicx` inclusion in LaTeX.
 
+Typographic and software design: [doc/spec.md](doc/spec.md).
+
 ## Usage
 
 ```tex
