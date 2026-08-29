@@ -53,7 +53,8 @@
     \par\vspace{\bigskipamount}%
     \nota@render{inline}{%
         \centering
-        \setlength{\parskip}{\medskipamount}%
+        % Natural width only: stretch here becomes uneven space between staves.
+        \setlength{\parskip}{\dimexpr\medskipamount\relax}%
         \setlength{\parindent}{0pt}%
     }{#1}%
     \par\vspace{\bigskipamount}%
