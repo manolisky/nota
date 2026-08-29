@@ -10,7 +10,7 @@ SCORE_FILES  := $(wildcard scores/*)
 TEXMFHOME    := $(shell kpsewhich -var-value=TEXMFHOME 2>/dev/null || echo "$$HOME/texmf")
 LOCAL_BIN    := $(HOME)/.local/bin
 
-.PHONY: all essentials examples pdfs showcase grids clean clean-generated renderer gallery test install-local help
+.PHONY: all essentials examples pdfs showcase overlays grids clean clean-generated renderer gallery test install-local help
 
 essentials: examples
 	@echo "Build complete!"
@@ -52,6 +52,15 @@ showcase: examples gallery
 	$(GALLERY_BIN) grid examples/latex/a4-article/main.pdf showcase/gallery/grids/a4-article.png --dpi 120
 	$(GALLERY_BIN) grid examples/latex/a3-twoside/main.pdf showcase/gallery/grids/a3-twoside.png --dpi 120
 
+overlays: gallery
+	@echo "==> Overlaying geometry rules on showcase example PDFs"
+	mkdir -p showcase/gallery/features
+	$(GALLERY_BIN) overlay showcase/pdf/a4-article.pdf showcase/gallery/features/a4-article-rules.png \
+		--all --dpi 120 --tile 4 --paper-mm 210x297 --margin-mm 20 --gutter-mm 5
+	$(GALLERY_BIN) overlay showcase/pdf/a3-twoside.pdf showcase/gallery/features/a3-twoside-rules.png \
+		--all --dpi 120 --tile 4 --paper-mm 297x420 --twoside \
+		--top-mm 25 --bottom-mm 25 --inner-mm 25 --outer-mm 45 --gutter-mm 5
+
 grids: showcase
 
 install-local: renderer
@@ -81,6 +90,7 @@ help:
 	@echo "  all            - Build example documents"
 	@echo "  examples       - Build self-contained example PDFs (gitignored)"
 	@echo "  showcase       - Copy example PDFs and grids into showcase/"
+	@echo "  overlays       - Draw paper/type-block/gutter rules on the example PDFs"
 	@echo "  renderer       - Build the Go nota-render CLI"
 	@echo "  gallery        - Build the Go nota-gallery demo tool"
 	@echo "  test           - Run Go tests and l3build tests"
