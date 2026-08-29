@@ -10,7 +10,7 @@ RESIZE_PCT  := 20
 TEXMFHOME   := $(shell kpsewhich -var-value=TEXMFHOME 2>/dev/null || echo "$$HOME/texmf")
 LOCAL_BIN   := $(HOME)/.local/bin
 
-.PHONY: all essentials examples pdfs grids resize_grid clean clean-generated setup renderer test install-local help
+.PHONY: all essentials examples pdfs grids resize_grid clean clean-generated renderer test install-local help
 
 essentials: examples
 	@echo "Build complete!"
@@ -69,9 +69,6 @@ clean-generated:
 
 clean: clean-generated
 	rm -f "$(RENDER_BIN)"
-
-setup:
-	@echo "No Python setup is used. Install Go to build scripts/nota-render."
 
 help:
 	@echo "Nota Makefile - Available targets:"

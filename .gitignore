@@ -6,29 +6,28 @@
 *.fdb_latexmk
 *.fls
 *.synctex.gz
+*.synctex
 *.toc
 *.nota.aux
 *.out
-
-# Python virtual environment
-.venv/
+*.xdv
 
 # Auto-generated nota files
-*notaaux/
 *-nota/
 examples/*/main.pdf
 
 # Go build products
 bin/
 scripts/nota-render/nota-render
+*.test
+coverage.out
 
 # l3build generated workspace
 build/
 
-# Auto-generated other files
-*_grid.png
+# Preview grids and temp images
+*_grid*.png
+temp_*.png
 
-# macOS specific files
+# macOS
 .DS_Store
-pdf_to_grid.sh
-resize_image.sh
