@@ -26,6 +26,9 @@ coverage.out
 # l3build generated workspace
 build/
 
+# GoReleaser
+dist/
+
 # Preview scratch images (not showcase/gallery)
 temp_*.png
 

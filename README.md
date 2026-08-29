@@ -60,21 +60,8 @@ tools/nota-gallery/   demo screenshot tooling (not installed)
 
 ## Examples
 
-```sh
-make examples
-```
-
-Or one document:
-
-```sh
-cd examples/latex/a4-article
-TEXINPUTS=.:../../../latex: xelatex main.tex
-../../../nota-render/nota-render main
-TEXINPUTS=.:../../../latex: xelatex main.tex
-TEXINPUTS=.:../../../latex: xelatex main.tex
-```
-
-Refresh committed visuals:
+`examples/latex/` is copy-paste source. Rebuild the committed PDFs, contact
+sheets, and geometry overlays with:
 
 ```sh
 make showcase

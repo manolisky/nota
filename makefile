@@ -10,13 +10,9 @@ SCORE_FILES  := $(wildcard scores/*)
 TEXMFHOME    := $(shell kpsewhich -var-value=TEXMFHOME 2>/dev/null || echo "$$HOME/texmf")
 LOCAL_BIN    := $(HOME)/.local/bin
 
-.PHONY: all essentials examples pdfs showcase overlays grids clean clean-generated renderer gallery test install-local help
+.PHONY: all examples showcase clean clean-generated renderer gallery test install-local release help
 
-essentials: examples
-	@echo "Build complete!"
-
-all: examples
-	@echo "Build complete!"
+all: showcase
 
 renderer: $(RENDER_BIN)
 
@@ -31,8 +27,10 @@ test:
 	cd tools/nota-gallery && go test ./...
 	l3build check
 
+release:
+	./tools/release.sh "$(bump)"
+
 examples: renderer $(addsuffix /main.pdf,$(EXAMPLES))
-pdfs: examples
 
 examples/%/main.pdf: examples/%/main.tex latex/nota.sty $(RENDER_BIN) $(SCORE_FILES)
 	@echo "==> (1/4) Building $@: LaTeX pass 1"
@@ -46,22 +44,17 @@ examples/%/main.pdf: examples/%/main.tex latex/nota.sty $(RENDER_BIN) $(SCORE_FI
 
 showcase: examples gallery
 	@echo "==> Publishing showcase PDFs and grids"
-	mkdir -p showcase/pdf showcase/gallery/grids
+	mkdir -p showcase/pdf showcase/gallery/grids showcase/gallery/features
 	cp examples/latex/a4-article/main.pdf showcase/pdf/a4-article.pdf
 	cp examples/latex/a3-twoside/main.pdf showcase/pdf/a3-twoside.pdf
 	$(GALLERY_BIN) grid examples/latex/a4-article/main.pdf showcase/gallery/grids/a4-article.png --dpi 120
 	$(GALLERY_BIN) grid examples/latex/a3-twoside/main.pdf showcase/gallery/grids/a3-twoside.png --dpi 120
-
-overlays: gallery
-	@echo "==> Overlaying geometry rules on showcase example PDFs"
-	mkdir -p showcase/gallery/features
+	@echo "==> Overlaying geometry rules"
 	$(GALLERY_BIN) overlay showcase/pdf/a4-article.pdf showcase/gallery/features/a4-article-rules.png \
 		--all --dpi 120 --tile 4 --paper-mm 210x297 --margin-mm 20 --gutter-mm 5
 	$(GALLERY_BIN) overlay showcase/pdf/a3-twoside.pdf showcase/gallery/features/a3-twoside-rules.png \
 		--all --dpi 120 --tile 4 --paper-mm 297x420 --twoside \
 		--top-mm 25 --bottom-mm 25 --inner-mm 25 --outer-mm 45 --gutter-mm 5
-
-grids: showcase
 
 install-local: renderer
 	@echo "==> Installing nota.sty into $(TEXMFHOME)"
@@ -87,18 +80,20 @@ clean: clean-generated
 help:
 	@echo "Nota Makefile - Available targets:"
 	@echo ""
-	@echo "  all            - Build example documents"
-	@echo "  examples       - Build self-contained example PDFs (gitignored)"
-	@echo "  showcase       - Copy example PDFs and grids into showcase/"
-	@echo "  overlays       - Draw paper/type-block/gutter rules on the example PDFs"
-	@echo "  renderer       - Build the Go nota-render CLI"
-	@echo "  gallery        - Build the Go nota-gallery demo tool"
+	@echo "  showcase       - Build example PDFs, contact sheets, and geometry overlays"
 	@echo "  test           - Run Go tests and l3build tests"
+	@echo "  renderer       - Build the Go nota-render CLI"
 	@echo "  install-local  - Install nota.sty and nota-render for local testing"
+	@echo "  release        - Bump nota.sty, commit, and tag (bump=patch|minor|major)"
 	@echo "  clean          - Remove generated example files and local binaries"
 	@echo ""
+	@echo "Shipping a GitHub Release (binaries people can download):"
+	@echo "  make release bump=patch"
+	@echo "  git push origin main --tags"
+	@echo "  patch = bugfix, minor = new option, major = breaking. Do not type the number."
+	@echo "  A normal git push does not publish a release."
+	@echo ""
 	@echo "Examples:"
-	@echo "  make renderer"
-	@echo "  make examples"
 	@echo "  make showcase"
-	@echo "  cd examples/latex/a4-article && TEXINPUTS=.:../../../latex: xelatex main.tex && ../../../nota-render/nota-render main && TEXINPUTS=.:../../../latex: xelatex main.tex && TEXINPUTS=.:../../../latex: xelatex main.tex"
+	@echo "  make test"
+	@echo "  make release bump=patch"

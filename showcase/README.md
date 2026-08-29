@@ -7,7 +7,7 @@ then commit when the look should change.
 pdf/                 finished example documents
 gallery/grids/       contact sheets of those PDFs
 gallery/pages/       selected page stills (later)
-gallery/features/    geometry-rule overlays (`make overlays`)
+gallery/features/    geometry-rule overlays
 ```
 
 Example PDFs in `examples/latex/` stay gitignored. Only copies under `pdf/`
@@ -15,7 +15,7 @@ are committed.
 
 ## Geometry rules
 
-`make overlays` draws four strokes on every page of the committed example
+`make showcase` draws four strokes on every page of the committed example
 PDFs and tiles them next to the plain grids:
 
 - grey — paper

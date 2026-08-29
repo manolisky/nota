@@ -8,6 +8,7 @@
 
 % blind text for testing layout
 \usepackage{blindtext}
+\usepackage{multicol}
 
 \usepackage[
     top=25mm,
@@ -45,7 +46,10 @@
 
     \blindtext[1]
 
-    \score{../../../scores/BWV_846.mxl}
+    {\setlength{\columnsep}{15mm}%
+    \begin{multicols}{2}
+    \score[unit=5]{../../../scores/BWV_846.mxl}
+    \end{multicols}}
 
     \blindtext[1]
 

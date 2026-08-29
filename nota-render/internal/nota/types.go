@@ -12,7 +12,9 @@ import (
 	"strings"
 )
 
-const Version = "nota-render 0.2.0"
+// Version is "dev" for local builds. Release binaries are stamped from the
+// git tag via GoReleaser -ldflags.
+var Version = "dev"
 
 // notationOverhangVU is 5mm in Verovio page units (tenths of a millimetre).
 // Staff systems fill \linewidth; braces and barlines sit in this gutter.
