@@ -150,7 +150,7 @@ func renderOne(projectRoot string, outputDir string, r Request, cfg Config, cach
 	if err != nil {
 		return result, err
 	}
-	if err := WriteInclude(texPath, pdfs, r.Type); err != nil {
+	if err := WriteInclude(texPath, pdfs, r.Type, r.Indent); err != nil {
 		return result, err
 	}
 
@@ -168,15 +168,22 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func WriteInclude(path string, imagePaths []string, scoreType string) error {
+func WriteInclude(path string, imagePaths []string, scoreType string, indent string) error {
 	var b strings.Builder
 	if scoreType == "example" {
 		if len(imagePaths) > 0 {
 			b.WriteString(fmt.Sprintf("\\makebox[\\linewidth][c]{\\includegraphics[scale=1]{%s}}\n", filepath.Base(imagePaths[0])))
 		}
 	} else {
-		for _, imagePath := range imagePaths {
-			b.WriteString(fmt.Sprintf("\\makebox[\\linewidth][c]{\\includegraphics[scale=1]{%s}}\\par\n", filepath.Base(imagePath)))
+		indentPX, _ := IndentPixels(indent)
+		useIndent := scoreType == "inline" && indentPX > 0
+		for i, imagePath := range imagePaths {
+			base := filepath.Base(imagePath)
+			if useIndent && i == 0 {
+				b.WriteString(fmt.Sprintf("\\hspace{%s}\\makebox[\\dimexpr\\linewidth-%s\\relax][c]{\\includegraphics[scale=1]{%s}}\\par\n", indent, indent, base))
+			} else {
+				b.WriteString(fmt.Sprintf("\\makebox[\\linewidth][c]{\\includegraphics[scale=1]{%s}}\\par\n", base))
+			}
 		}
 	}
 	return os.WriteFile(path, []byte(b.String()), 0o644)

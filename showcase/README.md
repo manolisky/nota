@@ -18,7 +18,7 @@ are committed.
 These are not built yet. When they exist they belong under `gallery/features/`,
 not in the LaTeX package:
 
-- `inline-vs-full/` — `\includescore` vs `\fullscore` vs `\examplescore`
+- `inline-vs-full/` — `\score` vs `\score[full]` vs `\score[example]`
 - `input-formats/` — MEI, MusicXML, Humdrum, MuseScore
 - `font-and-unit/` — Leipzig/Leland and unit size
 - `geometry-rules/` — paper, margins, and text block overlaid on a page

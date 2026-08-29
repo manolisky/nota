@@ -3,11 +3,11 @@
 \documentclass{article}
 \usepackage{nota}
 \begin{document}
-\includescore{scores/sonata15-1-basic.mei}
+\score{scores/sonata15-1-basic.mei}
 \typeout{NOTA-TEST: first request written}
 \begin{minipage}{0.5\textwidth}
 \typeout{NOTA-TEST: minipage linewidth \the\linewidth}
-\includescore{scores/sonata15-1-basic.mei}
+\score{scores/sonata15-1-basic.mei}
 \end{minipage}
 \typeout{NOTA-TEST: second request written}
 \end{document}

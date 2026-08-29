@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseManifest(t *testing.T) {
-	data := "1|inline|score.mei|Leipzig|6.875|345.0pt|550.0pt\n"
+	data := "1|inline|score.mei|Leipzig|6.875|345.0pt|550.0pt|15.0pt\n"
 	reqs, errs := ParseManifest(data)
 	if len(errs) != 0 {
 		t.Fatalf("unexpected parse errors: %v", errs)
@@ -17,7 +17,7 @@ func TestParseManifest(t *testing.T) {
 	if reqs[0].ID != "1" || reqs[0].Type != "inline" || reqs[0].Font != "Leipzig" {
 		t.Fatalf("unexpected request: %#v", reqs[0])
 	}
-	if reqs[0].LineWidth != "345.0pt" || reqs[0].TextHeight != "550.0pt" {
+	if reqs[0].LineWidth != "345.0pt" || reqs[0].TextHeight != "550.0pt" || reqs[0].Indent != "15.0pt" {
 		t.Fatalf("unexpected geometry fields: %#v", reqs[0])
 	}
 }
@@ -64,15 +64,35 @@ func TestOptionsForInline(t *testing.T) {
 	}
 }
 
-func TestOptionsForFullscore(t *testing.T) {
-	r := Request{Type: "fullscore", Font: "Leipzig", Unit: "6.875"}
+func TestOptionsForFull(t *testing.T) {
+	r := Request{Type: "full", Font: "Leipzig", Unit: "6.875"}
 	g := Geometry{LineWidthPX: 1000, TextHeightPX: 1400}
 	opts := OptionsForRequest(r, g)
 	if opts.PageWidth != 1100 || opts.PageHeight != 1400 {
-		t.Fatalf("unexpected fullscore size: %#v", opts)
+		t.Fatalf("unexpected full size: %#v", opts)
 	}
 	if !opts.JustifyVertically || opts.AdjustPageHeight || opts.Header != "" {
-		t.Fatalf("unexpected fullscore options: %#v", opts)
+		t.Fatalf("unexpected full options: %#v", opts)
+	}
+	if opts.FirstPageWidth != 0 {
+		t.Fatalf("full should ignore indent: %#v", opts)
+	}
+}
+
+func TestOptionsForInlineIndent(t *testing.T) {
+	r := Request{Type: "inline", Font: "Leland", Unit: "8", Indent: "10.0pt"}
+	g := Geometry{LineWidthPX: 1000, TextHeightPX: 1400}
+	opts := OptionsForRequest(r, g)
+	if opts.PageWidth != 1100 {
+		t.Fatalf("later pages should keep full width, got %d", opts.PageWidth)
+	}
+	indentPX, err := IndentPixels("10.0pt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantFirst := (1000 - indentPX) + 2*notationOverhangVU
+	if opts.FirstPageWidth != wantFirst {
+		t.Fatalf("expected FirstPageWidth %d, got %d", wantFirst, opts.FirstPageWidth)
 	}
 }
 

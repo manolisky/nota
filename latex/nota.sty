@@ -1,27 +1,56 @@
 % Nota Package: A system for including formatted music scores in LaTeX.
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{nota}[2026/05/03 v1.1 Nota Package]
+\ProvidesPackage{nota}[2026/08/29 v1.2 Nota Package]
 
 \makeatletter
 
-\RequirePackage{kvoptions}
-\SetupKeyvalOptions{family=nota, prefix=nota@}
-
-\DeclareStringOption[6.875]{unit}
-\DeclareStringOption[Leipzig]{font}
-
-\ProcessKeyvalOptions*
-
 \RequirePackage{graphicx}
-
-% Generated score assets live next to the main document build products.
-\graphicspath{{\jobname-nota/}}
 
 \newwrite\nota@requestsfile
 \newcounter{nota@score}
+\newdimen\nota@indent
+
+\gdef\nota@font{Leipzig}
+\gdef\nota@unit{}
+\gdef\nota@type{inline}
+
+% Package options are global so they survive \begin{document}.
+\DeclareKeys[nota]{
+  font .code:n = {\gdef\nota@font{#1}},
+  unit .code:n = {\gdef\nota@unit{#1}},
+  indent .code:n = {%
+    \global\nota@indent=#1\relax
+  },
+}
+
+% Zone and command keys are local (TeX groups).
+\DeclareKeys[nota.score]{
+  font .code:n = {\def\nota@font{#1}},
+  unit .code:n = {\def\nota@unit{#1}},
+  indent .code:n = {%
+    \nota@indent=#1\relax
+  },
+  full .code:n = {\def\nota@type{full}},
+  full .value_forbidden:n = true,
+  example .code:n = {\def\nota@type{example}},
+  example .value_forbidden:n = true,
+}
+
+\ProcessKeyOptions[nota]
+
+\newcommand{\notasetup}[1]{\SetKeys[nota.score]{#1}}
+
+% 6.875 at 10pt; clamp to Verovio's 4.5--12.
+\newcommand{\nota@unit@value}{%
+  \ifx\nota@unit\@empty
+    \fpeval{min(12, max(4.5, 6.875 * \f@size / 10))}%
+  \else
+    \nota@unit%
+  \fi
+}
 
 \newcommand{\nota@render}[3]{%
-    % #1: score type (inline, fullscore, example)
+    % #1: score type (inline, full, example)
     % #2: LaTeX formatting to apply around the generated include
     % #3: input score path
     \stepcounter{nota@score}%
@@ -29,12 +58,13 @@
     % Always write the request so nota-render can validate cache freshness even
     % when generated includes already exist. Measure at this command so
     % \newgeometry / minipage / twocolumn are picked up.
-    % Format: ID|TYPE|PATH|FONT|UNIT|LINEWIDTH|TEXTHEIGHT
+    % Format: ID|TYPE|PATH|FONT|UNIT|LINEWIDTH|TEXTHEIGHT|INDENT
     \immediate\write\nota@requestsfile{\the\value{nota@score}|#1|#3|%
         \nota@font|%
-        \nota@unit|%
+        \nota@unit@value|%
         \the\linewidth|%
-        \the\textheight%
+        \the\textheight|%
+        \the\nota@indent%
     }%
 
     \IfFileExists{\jobname-nota/nota-score-\the\value{nota@score}.tex}
@@ -49,29 +79,40 @@
     }%
 }
 
-\newcommand{\includescore}[1]{%
-    \par\vspace{\bigskipamount}%
-    \nota@render{inline}{%
+\NewDocumentCommand{\score}{O{} m}{%
+  \begingroup
+    \SetKeys[nota.score]{#1}%
+    \nota@dispatch{#2}%
+  \endgroup
+}
+
+\newcommand{\nota@dispatch}[1]{%
+  \def\nota@tmp{full}%
+  \ifx\nota@type\nota@tmp
+    \nota@render{full}{%
+      \setlength{\parindent}{0pt}%
+    }{#1}%
+  \else
+    \def\nota@tmp{example}%
+    \ifx\nota@type\nota@tmp
+      \nota@render{example}{%
+        \setlength{\parindent}{0pt}%
+      }{#1}%
+    \else
+      \par\vspace{\bigskipamount}%
+      \nota@render{inline}{%
         \centering
         % Natural width only: stretch here becomes uneven space between staves.
         \setlength{\parskip}{\dimexpr\medskipamount\relax}%
         \setlength{\parindent}{0pt}%
-    }{#1}%
-    \par\vspace{\bigskipamount}%
+      }{#1}%
+      \par\vspace{\bigskipamount}%
+    \fi
+  \fi
 }
 
-\newcommand{\fullscore}[1]{%
-    \nota@render{fullscore}{%
-        \setlength{\parindent}{0pt}%
-    }{#1}%
-    \par\vspace{\bigskipamount}%
-}
-
-\newcommand{\examplescore}[1]{%
-    \nota@render{example}{%
-        \setlength{\parindent}{0pt}%
-    }{#1}%
-}
+% Generated score assets live next to the main document build products.
+\graphicspath{{\jobname-nota/}}
 
 \AtBeginDocument{%
     \immediate\openout\nota@requestsfile=\jobname.nota.aux

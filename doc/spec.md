@@ -1,159 +1,313 @@
 # Nota spec
 
-Typographic and software design. Canonical package: `latex/nota.sty`.
-Renderer: `nota-render/`.
+How scores should look in a LaTeX document, and how the package and
+renderer cooperate to get that look.
 
-Scores should inherit the document’s type block and TeX’s page builder so they
-read as native content, not as a second layout engine pasted in.
+This is the design we are aiming at, not a user manual. Where the current
+code differs, the spec says so.
 
-## Commands
+**Now** means the current package already does this.
+**Planned** means we have agreed; it is not built yet.
+**Later** means we might want it, but not now.
 
-- `\includescore{file}` — in-flow fragment. Cropped systems as boxes; TeX
-  breaks pages. Space before and after from `\bigskipamount`.
-- `\fullscore{file}` — type-block-tall pages. Verovio justifies systems
-  vertically inside each page. The last page may be short.
-- `\examplescore{file}` — encoded breaks (`--breaks encoded`). Usually a
-  single cropped system, often inside a float.
+The LaTeX package lives in `latex/nota.sty`. The renderer is the Go
+program `nota-render`. Engraving is done by [Verovio](https://www.verovio.org/),
+which turns MusicXML, MEI, Humdrum, and similar files into SVG.
 
-LaTeX places boxes. Verovio engraves. Running heads, `\thepage`, and
-ragged/flush bottom belong to the class.
+## Goal
 
-## Option layers
+A score should read as part of the document, the way a display equation
+does. It should use the same text block, the same gaps the class already
+uses, and TeX’s own page breaks.
 
-Three explicit layers, plus automatic inheritance that is not an option.
+It should not bring its own page size, margins, or page numbers.
 
-- **Package** — `\usepackage[font=Leipzig,unit=6.875]{nota}`
-- **Zone** — `\notasetup{font=Leland,unit=8}` using **local** assignments so
-  `\begingroup` and environments revert them (same model as `\lstset` /
-  `\tikzset`)
-- **Command** — `\includescore[unit=7]{file.mei}`
+## How a score gets onto the page
 
-Resolution: **command > zone > package > built-in default**.
+TeX does not draw staves. On the first run, `\score{file.mei}` writes a
+request to `<jobname>.nota.aux`. Then you run `nota-render`, which asks
+Verovio for SVG, converts each page to PDF, and writes a small
+`nota-score-N.tex` that is just `\includegraphics` commands. Later LaTeX
+runs include those files.
 
-Zone and command options are **specified, not implemented**. Today only
-package `font` and `unit` exist; the three commands take a path only.
+LaTeX decides *where* the pictures sit. Verovio decides *how the music is
+engraved* (note spacing, system breaks, lyric widths).
 
-## Inherited context vs options
+## Command
 
-Measured at the command (current TeX context). Never declared as options:
+**Now.** One command:
 
-- `\linewidth` — staff systems fill this. Minipage, twocolumn, quote, and
-  `\newgeometry` change it. This is the type-block width, not `\textwidth`
-  and not the paper.
-- `\textheight` — height of a `\fullscore` page
-- `\bigskipamount` / `\medskipamount` — skips around scores and between
-  systems
-- ragged vs flush bottom (`\@textbottom`) — leftover vertical space
+```tex
+\score{file.mei}                 % in the text flow (default)
+\score[full]{file.mei}           % one music page per LaTeX page
+\score[example]{file.mei}      % a short excerpt, often in a figure
+```
 
-Declared as options (package / zone / command):
+The optional argument is a comma-separated list. Placement and engraving
+keys share it:
 
-- `font` — SMuFL music font (default `Leipzig`)
-- `unit` — staff size in MEI units (default `6.875`)
-- `lyricfont` — text inside the score (default `verovio`; see Fonts)
+```tex
+\score[full, unit=8]{file.mei}
+```
 
-## Features
+### `\score{file}` (default)
 
-Status: **done** (current behavior), **specified** (agreed, not built),
-**later**.
+A *system* is one line of music (one or more staves stacked). Verovio
+crops each system to its ink. LaTeX treats each system as a box and
+breaks pages the way it would between paragraphs. If a paragraph leaves
+space at the bottom of the page, the first systems can sit in that space.
 
-### 1. Fonts
+Space before and after the whole score is the document’s
+`\bigskipamount` (the usual large skip, as around a display).
 
-Music: SMuFL via `font`. Default Leipzig. **Done** as a package option.
+### `\score[full]{file}`
 
-Lyrics, tempo, and directions stay on **Verovio’s text font by default**.
-Those glyphs have special widths; not every document font works as a lyric
-font.
+Each picture is as tall as the type block (see below). Verovio spreads
+systems down that page. The last page of the piece may be short, like the
+last page of a published score.
 
-Specified, not implemented:
+### `\score[example]{file}`
 
-- `lyricfont=verovio` — default; current behavior once the option exists
-- `lyricfont=document` — later; document roman via Verovio `--svg-css`
+Verovio keeps the line breaks encoded in the file, instead of reflowing
+to `\linewidth`. Use this for a short excerpt, typically inside a
+`figure`.
 
-Do not auto-bind lyrics to `\rmfamily`.
+## Options
 
-### 2. Font size
+Three places you can set engraving keys, plus layout that is **never** an
+option because it is already true of the document.
 
-Staff size is the `unit` option (MEI unit: half the distance between staff
-lines). Default `6.875`. **Done** as a package option.
+1. **Package** — once for the document:
 
-`unit` does not follow `\small` / `\large` / `\f@size` unless we add that
-later. Lyrics size stays Verovio (`--lyric-size`) unless `lyricfont=document`
-forces a later decision.
+   ```tex
+   \usepackage[font=Leipzig]{nota}
+   \usepackage[font=Leipzig, unit=8]{nota}   % lock staff size
+   ```
 
-### 3. Margins / type block
+2. **Zone** — from here until the current TeX group ends
+   (`\begingroup`, an environment, a minipage). Then the previous values
+   return. **Now.**
 
-Inherit the type block, not the paper. **Done.**
+   ```tex
+   \notasetup{font=Leland, unit=8}
+   ```
 
-Staff systems fill `\linewidth`. A 5 mm brace gutter (`notationOverhangVU` in
-`nota-render/internal/nota/types.go`) hangs into the margin: the PDF is
-slightly wider than `\linewidth` and is centered with
-`\makebox[\linewidth][c]{...}`.
+   A chapter of full scores can say `\notasetup{full}` and then
+   `\score{act1.mei}` without repeating `[full]`.
 
-Call-site width is not a separate feature. Measuring `\the\linewidth` at
-the command *is* how margins work.
+3. **Command** — this score only. **Now.**
 
-### 4. Skips
+   ```tex
+   \score[full, unit=7]{file.mei}
+   ```
 
-**Done.**
+If the same key is set in more than one place, the nearest wins:
+**command, then zone, then package, then the built-in default.**
 
-- Around `\includescore` (and after `\fullscore`): `\vspace{\bigskipamount}`.
-  Document glue; stretch is allowed.
-- Between `\includescore` systems: `\parskip` is the natural width of
-  `\medskipamount` (`\dimexpr\medskipamount\relax`, no plus/minus).
-  Flush-bottom cannot open holes between staves.
+`full` and `example` are zone and command only. They are not package
+options: a mixed article should default to in-flow.
 
-### 5. In flow
+### Keys you set
 
-**Done.**
+- `font` — music (SMuFL) font. Default `Leipzig`. **Now** as a package
+  option.
+- `unit` — staff size. In Verovio, one unit is half the space between two
+  staff lines. If you do not set it, Nota derives it from the current
+  LaTeX font size (see Staff size). **Now.**
+- `indent` — first-system indent for default `\score`. Off unless you
+  set it (`indent=15pt`). Not taken from `\parindent`. **Now.**
+  Verovio has no indent flag; see First-system indent.
+- `lyricfont` — font for lyrics, tempo, directions. Default `verovio`
+  (Verovio’s own text font). Those characters have special widths; a
+  random document font often looks wrong. **Planned** as an option;
+  `lyricfont=document` (use the document’s roman) is **later**.
 
-- `\includescore` / `inline`: tiny Verovio page height, `--adjust-page-height`,
-  one cropped system per box. TeX pours them into leftover space and
-  chooses page breaks.
-- `\fullscore`: `--page-height` = `\textheight`, `--justify-vertically`, no
-  height crop. One plate per LaTeX page.
-- `\examplescore` / `example`: encoded breaks, crop width and height.
+### Layout you do not set
 
-## Non-goals
+At the moment `\score` runs, LaTeX already knows the current line width,
+page text height, and skips. The package reads those registers. You do
+not pass them as keys.
 
-- Last-system stretch. Verovio justifies systems.
-- Widow/orphan systems. Systems are tall; a leftover staff is acceptable.
-- Current color following `\color`. Later, not now.
-- First-system indent. Verovio’s job if we want it.
-- Verovio headers, footers, or page numbers. Already suppressed:
-  `--header none` on inline and example; `--footer none` always.
+The *type block* is the rectangle where body text lives: inside the
+margins, not the paper. `geometry` and the document class set it.
 
-Ragged vs flush bottom is not a Nota switch. TeX owns leftover space. Nota
-only froze inter-staff stretch so flush-bottom cannot fight the staves.
+- `\linewidth` — how wide a staff system is. In a one-column article
+  this is the type-block width. In a minipage, a quote, or two-column
+  mode it is narrower. Measured when the command runs, so
+  `\newgeometry` is picked up. **Now.**
+- `\textheight` — how tall a `\score[full]` page is. **Now.**
+- `\bigskipamount` — gap around an in-flow score. **Now.**
+- `\medskipamount` — gap between systems of an in-flow score. **Now.**
+- Ragged vs flush bottom — where leftover space on a short page goes
+  (see Skips). The class already chooses this. Nota does not add a
+  switch.
+
+## Layout
+
+### Fonts
+
+Music uses `font` (Leipzig by default). **Now.**
+
+Lyrics and other text in the score use Verovio’s text font unless the
+user asks otherwise. We do not silently switch them to `\rmfamily`.
+
+### Staff size
+
+If `unit` is not set at package, zone, or command, Nota derives it from
+the current font size (`\f@size`) when `\score` runs. An 11pt article
+gets a larger staff than a 10pt one. A score inside `\small` or a
+footnote shrinks with the text. **Now.**
+
+The scale is fixed so a 10pt document matches today’s default:
+
+```text
+unit = 6.875 × (current size in pt / 10)
+```
+
+Verovio only accepts `4.5`–`12`. Values outside that range are clamped.
+
+If you set `unit` anywhere, that number is used and size tracking
+stops. The renderer always receives a number in the aux file; LaTeX
+does the derivation.
+
+### First-system indent
+
+The first system of a piece can sit in from the left, like the first
+line of a paragraph. Off by default. Set `indent=` at package, zone, or
+command if you want it. **Now** for default `\score`.
+
+Verovio has no `--indent`. For default `\score`, each system is its own
+picture, so Nota engraves the first system to `\linewidth` minus the
+indent and shifts it right with `\hspace`. Later systems stay full
+width.
+
+`\score[full]` puts several systems on one picture. Indenting only
+the first of those needs MEI `scoreDef@system.leftmar` (or a later
+Verovio flag). That path is **later**; until then `[full]` is flush
+left.
+
+Examples in this repo do not set `indent`.
+
+### Margins
+
+Scores follow the type block, not the paper size.
+
+Systems are drawn to `\linewidth`. Braces and the leftmost barline need a
+little room past the staff. Verovio adds a 5 mm gutter on left and
+right, so the PDF is slightly wider than the type block. LaTeX then
+centers that PDF on `\linewidth`, and the gutter hangs into the margin
+the way an engraved brace does.
+
+### Skips
+
+Around an in-flow score, the skip is `\bigskipamount`, including its
+stretch. That glue is *outside* the music, so the class may still use it
+when packing a page.
+
+Between systems, the skip is the *natural* width of `\medskipamount` with
+the stretch stripped. Two-sided classes use flush bottom: leftover space
+is poured into stretchable glue so every page ends at the same depth. If
+the gap between staves can stretch, you get uneven white bands inside the
+score and a paragraph parked on the bottom margin. Staves need a fixed
+distance; leftover space stays where the class already puts it (a hole
+at the bottom if ragged, other document glue if flush). **Now.**
+
+### In the text flow
+
+Default `\score` is a stack of cropped system pictures. TeX turns the
+page when the next system does not fit.
+
+`\score[full]` is different: each picture is already `\textheight` tall,
+so it occupies a whole type-block page. Gaps between systems on that
+page are Verovio’s `--spacing-system` default, not `\medskipamount`.
+
+`\score[example]` keeps the file’s own line breaks and shrinks the
+picture to the ink.
+
+## Verovio
+
+Nota should not re-expose every Verovio flag. Most of them are
+engraving taste (slur shape, hairpin thickness). The list below is
+what matters for *this* spec: layout that should follow the document,
+or a small set of score options we may add later.
+
+**Already passed (now):** `--font`, `--unit`, `--page-width`,
+`--page-height`, `--page-margin-*`, `--adjust-page-height`,
+`--adjust-page-width` (example), `--header none` / `--footer none`,
+`--justify-vertically` (full), `--breaks encoded` (example),
+`--mm-output`, plus id/SMuFL output flags.
+
+**Map from the document (now):**
+
+- `--unit` from `\f@size` when `unit` is unset
+- `--svg-css` when `lyricfont=document` (**later**)
+- First-system indent: not a Verovio flag; only if the user sets
+  `indent`; narrower first page plus `\hspace` on default `\score`
+
+**Leave at Verovio defaults (we are not wrapping them yet):**
+
+- `--spacing-system` — gap between systems on a `\score[full]` page.
+  Trust Verovio. If it ever fights the document, it can become a user
+  key; it is not derived from `\medskipamount`.
+- `--no-justification`, `--min-last-justification` — last-system
+  stretch. Verovio already has a policy (justify if the system is at
+  least 80% full).
+- `--breaks-no-widow` — packing a leftover measure. Systems are tall;
+  we do not fight orphans.
+- `--spacing-staff` — gap between staves *inside* a system (piano,
+  etc.). Engraving, not the document skip.
+- `--lyric-size` — in MEI units, so it already scales with `unit`
+- `--condense` — hide empty staves. Useful later as a Nota key, not
+  inherited from LaTeX
+- `--header` / `--footer` other than `none` — LaTeX owns the page
+  style
+- `--scale`, `--landscape` — we size in millimetres to the type block
+
+A later `\score[condense]` (or similar) can pass `--condense` without
+making Nota a general Verovio frontend.
+
+## What we are not doing
+
+- **Justifying the last system of a fragment to full width.** Verovio
+  already decides system justification (`--min-last-justification`).
+- **Preventing a single system at the top or bottom of a page.** Systems
+  are much taller than a text line. An “orphan” staff is acceptable.
+- **Following `\color`.** A score in a blue theorem could pick up the
+  text color. **Later.**
+- **Page numbers and running heads from Verovio.** LaTeX already has
+  those. Verovio’s header is off for in-flow and example scores; its
+  footer is always off. **Now.**
 
 ## Build protocol
 
-Two-step build:
+For the renderer and the package, not for document authors.
 
-1. LaTeX writes requests to `<jobname>.nota.aux`.
-2. `nota-render` writes SVG (canonical), PDF, and `nota-score-N.tex`.
-3. Later LaTeX passes `\input` those files.
+1. LaTeX writes `<jobname>.nota.aux`.
+2. `nota-render` writes SVG (the canonical engraving), PDF for
+   `graphicx`, and `nota-score-N.tex`.
+3. Later LaTeX runs `\input` those files.
 
-Aux line (current):
+Each aux line is:
 
 ```text
-ID|TYPE|PATH|FONT|UNIT|LINEWIDTH|TEXTHEIGHT
+ID|TYPE|PATH|FONT|UNIT|LINEWIDTH|TEXTHEIGHT|INDENT
 ```
 
-`TYPE` is `inline`, `fullscore`, or `example`. `LINEWIDTH` and
-`TEXTHEIGHT` are TeX `pt` dimensions measured at the command.
+`TYPE` is `inline` (default `\score`), `full`, or `example`. Width and
+height are TeX `pt` values from `\the\linewidth` and `\the\textheight`.
+`UNIT` is always a number: either the user’s `unit` or the value
+derived from `\f@size`. `INDENT` is `0.0pt` unless the user set
+`indent`. `\score[full]` still receives it but the renderer ignores it.
 
-Zone and command options, when implemented, only change what those fields
-contain at `\immediate\write` time. `lyricfont` adds a field or stays
-omitted until implemented.
+When `\score` writes the aux, zone and command keys only change the
+field values at write time. `lyricfont` stays omitted until that option
+exists.
 
-Cache key includes renderer version, request fields, and input file
-bytes (`nota-render/internal/nota/types.go`).
+The cache key is renderer version, those fields, and the bytes of the
+input score (`nota-render/internal/nota/types.go`).
 
-Placement vs engine: generated includes are `\includegraphics` in a
-`\linewidth` box. Verovio does not paginate the LaTeX document.
+## Still open
 
-## Open decisions
-
-- Exact `lyricfont` value names (`verovio` / `document` vs a font name).
-- Whether `unit` should later track `\f@size`.
-- Twoside inner vs outer for the brace gutter (today it hangs equally).
+- The exact `lyricfont` values: `verovio` / `document`, or a font name.
+- On two-sided pages, whether the brace gutter should hang into the
+  inner or outer margin. Today it hangs equally on both sides.

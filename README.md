@@ -17,11 +17,11 @@ Typographic and software design: [doc/spec.md](doc/spec.md).
 ## Usage
 
 ```tex
-\usepackage[font=Leipzig,unit=6.875]{nota}
+\usepackage[font=Leipzig]{nota}
 
-\includescore{score.mei}
-\fullscore{full-score.mei}
-\examplescore{example.krn}
+\score{score.mei}
+\score[full]{full-score.mei}
+\score[example]{example.krn}
 ```
 
 Build a document with:
@@ -95,7 +95,7 @@ It does not install `nota-gallery`.
 
 ## Requirements
 
-- LaTeX with `graphicx` and `kvoptions`
+- LaTeX with `graphicx` (2022-06-01 or later, for `\DeclareKeys`)
 - Go, for building `nota-render`
 - Verovio CLI on `PATH` for the current renderer backend
 - `rsvg-convert` on `PATH` for SVG-to-PDF page conversion

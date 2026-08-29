@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const Version = "nota-render 0.1.1"
+const Version = "nota-render 0.2.0"
 
 // notationOverhangVU is 5mm in Verovio page units (tenths of a millimetre).
 // Staff systems fill \linewidth; braces and barlines sit in this gutter.
@@ -37,6 +37,7 @@ type Request struct {
 	Unit       string
 	LineWidth  string
 	TextHeight string
+	Indent     string
 }
 
 type Geometry struct {
@@ -59,6 +60,7 @@ type VerovioOptions struct {
 	AdjustPageHeight    bool
 	AdjustPageWidth     bool
 	JustifyVertically   bool
+	FirstPageWidth      int
 	MMOutput            bool
 	XMLIDChecksum       bool
 	RemoveIDs           bool
@@ -100,14 +102,14 @@ func ParseManifest(data string) ([]Request, []error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 7)
-		if len(parts) != 7 {
-			errs = append(errs, fmt.Errorf("line %d: expected 7 fields, got %d", lineNo+1, len(parts)))
+		parts := strings.SplitN(line, "|", 8)
+		if len(parts) != 8 {
+			errs = append(errs, fmt.Errorf("line %d: expected 8 fields, got %d", lineNo+1, len(parts)))
 			continue
 		}
 		requests = append(requests, Request{
 			ID: parts[0], Type: parts[1], Path: parts[2], Font: parts[3], Unit: parts[4],
-			LineWidth: parts[5], TextHeight: parts[6],
+			LineWidth: parts[5], TextHeight: parts[6], Indent: parts[7],
 		})
 	}
 	return requests, errs
@@ -125,6 +127,14 @@ func LatexDimensionToPixels(value string) (int, error) {
 	// TeX pt → tenths of a millimetre (Verovio page units). 1 pt = 1/72.27 in.
 	mm := f * 25.4 / 72.27
 	return int(mm * 10), nil
+}
+
+func IndentPixels(value string) (int, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, nil
+	}
+	return LatexDimensionToPixels(value)
 }
 
 func GeometryFromRequest(r Request) (Geometry, error) {
@@ -151,7 +161,12 @@ func OptionsForRequest(r Request, g Geometry) VerovioOptions {
 		// Verovio requires a page height; adjust-page-height shrinks to content.
 		opts.PageHeight = 100
 		opts.AdjustPageHeight = true
-	case "fullscore":
+		indentPX, err := IndentPixels(r.Indent)
+		if err == nil && indentPX > 0 && indentPX < g.LineWidthPX {
+			staff := g.LineWidthPX - indentPX
+			opts.FirstPageWidth = staff + 2*notationOverhangVU
+		}
+	case "full":
 		applyNotationOverhang(&opts, g.LineWidthPX)
 		opts.PageHeight = g.TextHeightPX
 		opts.JustifyVertically = true
@@ -183,7 +198,7 @@ func CacheKey(projectRoot string, r Request) (string, error) {
 	h.Write([]byte{0})
 	h.Write([]byte(r.ID + "|" + r.Type + "|" + r.Path + "|" + r.Font + "|" + r.Unit))
 	h.Write([]byte{0})
-	h.Write([]byte(r.LineWidth + "|" + r.TextHeight))
+	h.Write([]byte(r.LineWidth + "|" + r.TextHeight + "|" + r.Indent))
 	h.Write([]byte{0})
 	h.Write(content)
 	return hex.EncodeToString(h.Sum(nil)), nil

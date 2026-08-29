@@ -3,7 +3,7 @@
 \documentclass{article}
 \usepackage{nota}
 \begin{document}
-\includescore{scores/sonata15-1-basic.mei}
+\score{scores/sonata15-1-basic.mei}
 \typeout{NOTA-TEST: request written}
 \end{document}
 \END

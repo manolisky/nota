@@ -36,7 +36,11 @@ func (b VerovioCLIBackend) RenderSVGPages(inputPath string, outputDir string, ba
 	var outputs []string
 	for page := 1; ; page++ {
 		outPath := filepath.Join(outputDir, fmt.Sprintf("%s-page-%d.svg", baseName, page))
-		err := b.runVerovio(renderInput, outPath, page, options)
+		pageOpts := options
+		if page == 1 && options.FirstPageWidth > 0 {
+			pageOpts.PageWidth = options.FirstPageWidth
+		}
+		err := b.runVerovio(renderInput, outPath, page, pageOpts)
 		if err != nil {
 			if page > 1 && isPageRangeError(err) {
 				break

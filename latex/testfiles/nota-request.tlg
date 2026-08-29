@@ -18,18 +18,12 @@ File: size10.clo ....-..-.. v... Standard LaTeX file (size option)
 \bibindent=\dimen...
 ) (nota.sty
 Package: nota ....-..-.. v... Nota Package
-(../kvoptions.sty
-Package: kvoptions ....-..-.. v... Key value format for package options (HO)
+(../graphicx.sty
+Package: graphicx ....-..-.. v... Enhanced LaTeX Graphics (DPC,SPQR)
 (../keyval.sty
 Package: keyval ....-..-.. v... key=value parser (DPC)
 \KV@toks@=\toks...
-) (../ltxcmds.sty
-Package: ltxcmds ....-..-.. v... LaTeX kernel commands for general use (HO)
-) (../kvsetkeys.sty
-Package: kvsetkeys ....-..-.. v... Key value parser (HO)
-)) (../graphicx.sty
-Package: graphicx ....-..-.. v... Enhanced LaTeX Graphics (DPC,SPQR)
-(../graphics.sty
+) (../graphics.sty
 Package: graphics ....-..-.. v... Standard LaTeX Graphics (DPC,SPQR)
 (../trig.sty
 Package: trig ....-..-.. v... sin cos tan (DPC)
@@ -45,6 +39,7 @@ File: pdftex.def ....-..-.. v... Graphics/color driver for pdftex
 )
 \nota@requestsfile=\write...
 \c@nota@score=\count...
+\nota@indent=\dimen...
 ) (../l3backend-pdftex.def
 File: l3backend-pdftex.def ....-..-.. L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count...
