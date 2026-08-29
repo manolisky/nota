@@ -9,8 +9,8 @@ Nota uses a two-step build:
 2. `nota-render` renders scores into `<jobname>-nota/`.
 3. LaTeX includes the generated graphics on later passes.
 
-The renderer is implemented as a Go CLI. SVG pages are the canonical render
-artifact; PDF files are generated for normal `graphicx` inclusion in LaTeX.
+The renderer is a Go CLI. SVG pages are the canonical render artifact; PDF
+files are generated for `graphicx` inclusion in LaTeX.
 
 ## Usage
 
@@ -42,64 +42,54 @@ paper-nota/
   nota-cache.json
 ```
 
-## Examples
-
-The example documents are structured as small real LaTeX projects:
+## Repository layout
 
 ```text
-examples/
-  shared_score_files/
-  a4example/
-    main.tex
-  a3example/
-    main.tex
+nota-render/          score engine (Go)
+latex/                LaTeX package (nota.sty, l3build tests)
+scores/               shared music fixtures
+examples/latex/       source-only how-to documents
+showcase/             committed PDFs and gallery images
+tools/nota-gallery/   demo screenshot tooling (not installed)
 ```
 
-Build both examples from the repo root:
+`examples/` is copy-paste source. Local `main.pdf` files there are gitignored.
+`showcase/pdf` and `showcase/gallery` are the tracked visual record.
+
+## Examples
 
 ```sh
 make examples
 ```
 
-Or build one example manually:
+Or one document:
 
 ```sh
-cd examples/a4example
-xelatex main.tex
-nota-render main
-xelatex main.tex
-xelatex main.tex
+cd examples/latex/a4-article
+TEXINPUTS=.:../../../latex: xelatex main.tex
+../../../nota-render/nota-render main
+TEXINPUTS=.:../../../latex: xelatex main.tex
+TEXINPUTS=.:../../../latex: xelatex main.tex
 ```
 
-The generated files stay inside that example project:
+Refresh committed visuals:
 
-```text
-main.nota.aux
-main-nota/
-main.pdf
+```sh
+make showcase
 ```
 
 ## Local Development
 
-Build the renderer:
-
 ```sh
 make renderer
-```
-
-Build the examples:
-
-```sh
-make examples
-```
-
-Install into your local TeX tree for testing:
-
-```sh
+make test
 make install-local
 kpsewhich nota.sty
 nota-render --version
 ```
+
+`make install-local` installs `latex/nota.sty` and the `nota-render` binary.
+It does not install `nota-gallery`.
 
 ## Requirements
 
@@ -108,6 +98,7 @@ nota-render --version
 - Verovio CLI on `PATH` for the current renderer backend
 - `rsvg-convert` on `PATH` for SVG-to-PDF page conversion
 - MuseScore CLI `mscore` on `PATH` only for `.mscz` inputs
+- Poppler (`pdftoppm`) and ImageMagick 7 (`magick`) only for `make showcase`
 
 The renderer is Python-free. `.mscz` files are supported only when MuseScore is
 installed separately; Nota does not bundle MuseScore.

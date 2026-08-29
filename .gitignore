@@ -14,20 +14,21 @@
 
 # Auto-generated nota files
 *-nota/
-examples/*/main.pdf
+examples/**/main.pdf
 
 # Go build products
 bin/
-scripts/nota-render/nota-render
+nota-render/nota-render
+tools/nota-gallery/nota-gallery
 *.test
 coverage.out
 
 # l3build generated workspace
 build/
 
-# Preview grids and temp images
-*_grid*.png
+# Preview scratch images (not showcase/gallery)
 temp_*.png
 
-# macOS
+# Editor / OS
+.vscode/
 .DS_Store
