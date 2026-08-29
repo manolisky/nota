@@ -172,11 +172,11 @@ func WriteInclude(path string, imagePaths []string, scoreType string) error {
 	var b strings.Builder
 	if scoreType == "example" {
 		if len(imagePaths) > 0 {
-			b.WriteString(fmt.Sprintf("\\makebox[\\textwidth][c]{\\includegraphics[scale=1]{%s}}\n", filepath.Base(imagePaths[0])))
+			b.WriteString(fmt.Sprintf("\\makebox[\\linewidth][c]{\\includegraphics[scale=1]{%s}}\n", filepath.Base(imagePaths[0])))
 		}
 	} else {
 		for _, imagePath := range imagePaths {
-			b.WriteString(fmt.Sprintf("\\makebox[\\textwidth][c]{\\includegraphics[scale=1]{%s}}\\par\n", filepath.Base(imagePath)))
+			b.WriteString(fmt.Sprintf("\\makebox[\\linewidth][c]{\\includegraphics[scale=1]{%s}}\\par\n", filepath.Base(imagePath)))
 		}
 	}
 	return os.WriteFile(path, []byte(b.String()), 0o644)

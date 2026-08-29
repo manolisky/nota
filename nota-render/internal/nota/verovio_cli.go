@@ -112,10 +112,11 @@ func verovioArgs(options VerovioOptions) []string {
 	}
 	args = appendIntArg(args, "--page-width", options.PageWidth)
 	args = appendIntArg(args, "--page-height", options.PageHeight)
-	args = appendIntArg(args, "--page-margin-top", options.PageMarginTop)
-	args = appendIntArg(args, "--page-margin-bottom", options.PageMarginBottom)
-	args = appendIntArg(args, "--page-margin-left", options.PageMarginLeft)
-	args = appendIntArg(args, "--page-margin-right", options.PageMarginRight)
+	// Always pass margins so 0 is explicit (Verovio defaults to 50 if omitted).
+	args = append(args, "--page-margin-top", strconv.Itoa(options.PageMarginTop))
+	args = append(args, "--page-margin-bottom", strconv.Itoa(options.PageMarginBottom))
+	args = append(args, "--page-margin-left", strconv.Itoa(options.PageMarginLeft))
+	args = append(args, "--page-margin-right", strconv.Itoa(options.PageMarginRight))
 	if options.AdjustPageHeight {
 		args = append(args, "--adjust-page-height")
 	}

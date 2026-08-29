@@ -5,6 +5,8 @@ LATEX        := xelatex
 RENDER_BIN   := nota-render/nota-render
 GALLERY_BIN  := tools/nota-gallery/nota-gallery
 RENDER       := ../../../$(RENDER_BIN)
+RENDER_SRCS  := $(shell find nota-render -name '*.go')
+SCORE_FILES  := $(wildcard scores/*)
 TEXMFHOME    := $(shell kpsewhich -var-value=TEXMFHOME 2>/dev/null || echo "$$HOME/texmf")
 LOCAL_BIN    := $(HOME)/.local/bin
 
@@ -16,7 +18,9 @@ essentials: examples
 all: examples
 	@echo "Build complete!"
 
-renderer:
+renderer: $(RENDER_BIN)
+
+$(RENDER_BIN): $(RENDER_SRCS)
 	cd nota-render && go build -o nota-render ./cmd/nota-render
 
 gallery:
@@ -30,11 +34,11 @@ test:
 examples: renderer $(addsuffix /main.pdf,$(EXAMPLES))
 pdfs: examples
 
-examples/%/main.pdf: examples/%/main.tex
+examples/%/main.pdf: examples/%/main.tex latex/nota.sty $(RENDER_BIN) $(SCORE_FILES)
 	@echo "==> (1/4) Building $@: LaTeX pass 1"
 	cd $(dir $<) && TEXINPUTS=.:../../../latex: $(LATEX) -jobname=main main.tex
 	@echo "==> (2/4) Building $@: Nota rendering"
-	cd $(dir $<) && $(RENDER) main
+	cd $(dir $<) && $(RENDER) --force main
 	@echo "==> (3/4) Building $@: LaTeX pass 2"
 	cd $(dir $<) && TEXINPUTS=.:../../../latex: $(LATEX) -jobname=main main.tex
 	@echo "==> (4/4) Building $@: LaTeX pass 3"

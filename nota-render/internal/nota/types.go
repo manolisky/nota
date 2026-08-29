@@ -12,7 +12,13 @@ import (
 	"strings"
 )
 
-const Version = "nota-render 0.1.0"
+const Version = "nota-render 0.1.1"
+
+// notationOverhangVU is 5mm in Verovio page units (tenths of a millimetre).
+// Staff systems fill \linewidth; braces and barlines sit in this gutter.
+// Centering the slightly wider PDF in a \linewidth box hangs that gutter
+// into the LaTeX margin.
+const notationOverhangVU = 50
 
 type Config struct {
 	Jobname   string
@@ -24,28 +30,18 @@ type Config struct {
 }
 
 type Request struct {
-	ID          string
-	Type        string
-	Path        string
-	Font        string
-	Unit        string
-	PaperWidth  string
-	PaperHeight string
-	Top         string
-	Bottom      string
-	Right       string
-	Left        string
+	ID         string
+	Type       string
+	Path       string
+	Font       string
+	Unit       string
+	LineWidth  string
+	TextHeight string
 }
 
 type Geometry struct {
-	PaperWidthPX  int
-	PaperHeightPX int
-	TopPX         int
-	BottomPX      int
-	RightPX       int
-	LeftPX        int
-	TextWidthPX   int
-	TextHeightPX  int
+	LineWidthPX  int
+	TextHeightPX int
 }
 
 type VerovioOptions struct {
@@ -104,15 +100,14 @@ func ParseManifest(data string) ([]Request, []error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 11)
-		if len(parts) != 11 {
-			errs = append(errs, fmt.Errorf("line %d: expected 11 fields, got %d", lineNo+1, len(parts)))
+		parts := strings.SplitN(line, "|", 7)
+		if len(parts) != 7 {
+			errs = append(errs, fmt.Errorf("line %d: expected 7 fields, got %d", lineNo+1, len(parts)))
 			continue
 		}
 		requests = append(requests, Request{
 			ID: parts[0], Type: parts[1], Path: parts[2], Font: parts[3], Unit: parts[4],
-			PaperWidth: parts[5], PaperHeight: parts[6], Top: parts[7], Bottom: parts[8],
-			Right: parts[9], Left: parts[10],
+			LineWidth: parts[5], TextHeight: parts[6],
 		})
 	}
 	return requests, errs
@@ -127,39 +122,21 @@ func LatexDimensionToPixels(value string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("invalid LaTeX dimension %q", value)
 	}
-	mm := f * 0.3527
+	// TeX pt → tenths of a millimetre (Verovio page units). 1 pt = 1/72.27 in.
+	mm := f * 25.4 / 72.27
 	return int(mm * 10), nil
 }
 
 func GeometryFromRequest(r Request) (Geometry, error) {
-	pw, err := LatexDimensionToPixels(r.PaperWidth)
+	lw, err := LatexDimensionToPixels(r.LineWidth)
 	if err != nil {
-		return Geometry{}, fmt.Errorf("paper width: %w", err)
+		return Geometry{}, fmt.Errorf("line width: %w", err)
 	}
-	ph, err := LatexDimensionToPixels(r.PaperHeight)
+	th, err := LatexDimensionToPixels(r.TextHeight)
 	if err != nil {
-		return Geometry{}, fmt.Errorf("paper height: %w", err)
+		return Geometry{}, fmt.Errorf("text height: %w", err)
 	}
-	top, err := LatexDimensionToPixels(r.Top)
-	if err != nil {
-		return Geometry{}, fmt.Errorf("top margin: %w", err)
-	}
-	bottom, err := LatexDimensionToPixels(r.Bottom)
-	if err != nil {
-		return Geometry{}, fmt.Errorf("bottom margin: %w", err)
-	}
-	right, err := LatexDimensionToPixels(r.Right)
-	if err != nil {
-		return Geometry{}, fmt.Errorf("right margin: %w", err)
-	}
-	left, err := LatexDimensionToPixels(r.Left)
-	if err != nil {
-		return Geometry{}, fmt.Errorf("left margin: %w", err)
-	}
-	return Geometry{
-		PaperWidthPX: pw, PaperHeightPX: ph, TopPX: top, BottomPX: bottom,
-		RightPX: right, LeftPX: left, TextWidthPX: pw - left - right, TextHeightPX: ph - top - bottom,
-	}, nil
+	return Geometry{LineWidthPX: lw, TextHeightPX: th}, nil
 }
 
 func OptionsForRequest(r Request, g Geometry) VerovioOptions {
@@ -170,25 +147,29 @@ func OptionsForRequest(r Request, g Geometry) VerovioOptions {
 	switch r.Type {
 	case "inline":
 		opts.Header = "none"
+		applyNotationOverhang(&opts, g.LineWidthPX)
+		// Verovio requires a page height; adjust-page-height shrinks to content.
 		opts.PageHeight = 100
-		opts.PageWidth = g.TextWidthPX + 100
 		opts.AdjustPageHeight = true
 	case "fullscore":
-		opts.PageWidth = g.TextWidthPX + 100
-		opts.PageHeight = g.TextHeightPX + 100
-		opts.PageMarginBottom = 120
+		applyNotationOverhang(&opts, g.LineWidthPX)
+		opts.PageHeight = g.TextHeightPX
 		opts.JustifyVertically = true
-		opts.AdjustPageHeight = true
 	case "example":
 		opts.Header = "none"
 		opts.Breaks = "encoded"
-		opts.PageWidth = g.PaperHeightPX
-		opts.PageMarginLeft = g.RightPX
-		opts.PageMarginRight = g.LeftPX
+		applyNotationOverhang(&opts, g.LineWidthPX)
+		opts.PageHeight = 100
 		opts.AdjustPageHeight = true
 		opts.AdjustPageWidth = true
 	}
 	return opts
+}
+
+func applyNotationOverhang(opts *VerovioOptions, lineWidthPX int) {
+	opts.PageMarginLeft = notationOverhangVU
+	opts.PageMarginRight = notationOverhangVU
+	opts.PageWidth = lineWidthPX + 2*notationOverhangVU
 }
 
 func CacheKey(projectRoot string, r Request) (string, error) {
@@ -202,7 +183,7 @@ func CacheKey(projectRoot string, r Request) (string, error) {
 	h.Write([]byte{0})
 	h.Write([]byte(r.ID + "|" + r.Type + "|" + r.Path + "|" + r.Font + "|" + r.Unit))
 	h.Write([]byte{0})
-	h.Write([]byte(r.PaperWidth + "|" + r.PaperHeight + "|" + r.Top + "|" + r.Bottom + "|" + r.Right + "|" + r.Left))
+	h.Write([]byte(r.LineWidth + "|" + r.TextHeight))
 	h.Write([]byte{0})
 	h.Write(content)
 	return hex.EncodeToString(h.Sum(nil)), nil

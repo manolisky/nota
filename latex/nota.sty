@@ -24,38 +24,17 @@
     % #1: score type (inline, fullscore, example)
     % #2: LaTeX formatting to apply around the generated include
     % #3: input score path
-    \newdimen\notapaperwidth
-    \notapaperwidth=\paperwidth
-
-    \newdimen\notapaperheight
-    \notapaperheight=\paperheight
-
-    \newdimen\notatopmargin
-    \notatopmargin=\dimexpr1in+\topmargin+\headheight+\headsep\relax
-
-    \newdimen\notabottommargin
-    \notabottommargin=\dimexpr\paperheight-(1in+\topmargin+\headheight+\headsep+\textheight)\relax
-
-    \newdimen\notaleftmargin
-    \notaleftmargin=\dimexpr1in+\oddsidemargin\relax
-
-    \newdimen\notarightmargin
-    \notarightmargin=\dimexpr\paperwidth-(1in+\oddsidemargin+\textwidth)\relax
-
     \stepcounter{nota@score}%
 
     % Always write the request so nota-render can validate cache freshness even
-    % when generated includes already exist.
-    % Format: ID|TYPE|PATH|FONT|UNIT|PAPERWIDTH|PAPERHEIGHT|TOP|BOTTOM|RIGHT|LEFT
+    % when generated includes already exist. Measure at this command so
+    % \newgeometry / minipage / twocolumn are picked up.
+    % Format: ID|TYPE|PATH|FONT|UNIT|LINEWIDTH|TEXTHEIGHT
     \immediate\write\nota@requestsfile{\the\value{nota@score}|#1|#3|%
         \nota@font|%
         \nota@unit|%
-        \the\notapaperwidth|%
-        \the\notapaperheight|%
-        \the\notatopmargin|%
-        \the\notabottommargin|%
-        \the\notarightmargin|%
-        \the\notaleftmargin%
+        \the\linewidth|%
+        \the\textheight%
     }%
 
     \IfFileExists{\jobname-nota/nota-score-\the\value{nota@score}.tex}
@@ -71,28 +50,25 @@
 }
 
 \newcommand{\includescore}[1]{%
-    \vspace{5ex}%
-    \raggedbottom
+    \par\vspace{\bigskipamount}%
     \nota@render{inline}{%
         \centering
-        \setlength{\parskip}{2ex plus 5ex}%
-        \setlength{\parindent}{0mm}%
-        \flushbottom
+        \setlength{\parskip}{\medskipamount}%
+        \setlength{\parindent}{0pt}%
     }{#1}%
-    \raggedbottom
-    \vspace{5ex}%
+    \par\vspace{\bigskipamount}%
 }
 
 \newcommand{\fullscore}[1]{%
     \nota@render{fullscore}{%
-        \setlength{\parindent}{0mm}%
+        \setlength{\parindent}{0pt}%
     }{#1}%
-    \vspace{5ex}%
+    \par\vspace{\bigskipamount}%
 }
 
 \newcommand{\examplescore}[1]{%
     \nota@render{example}{%
-        \setlength{\parindent}{0mm}%
+        \setlength{\parindent}{0pt}%
     }{#1}%
 }
 
