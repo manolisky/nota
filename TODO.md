@@ -1,7 +1,7 @@
 # Todo
 
 - [-] realeases
-- [ ] We need a better readme
+- [x] We need a better readme
     - Intro
     - Demo
     - Usage
