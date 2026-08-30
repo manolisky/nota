@@ -89,7 +89,7 @@ help:
 	@echo ""
 	@echo "Shipping a GitHub Release (binaries people can download):"
 	@echo "  make release bump=patch"
-	@echo "  git push origin main --tags"
+	@echo "  git push origin HEAD --follow-tags"
 	@echo "  patch = bugfix, minor = new option, major = breaking. Do not type the number."
 	@echo "  A normal git push does not publish a release."
 	@echo ""

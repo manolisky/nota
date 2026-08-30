@@ -153,7 +153,17 @@ if [ -n "$(git status --porcelain)" ]; then
 	exit 1
 fi
 
+git fetch
+if git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
+	behind=$(git rev-list --count 'HEAD..@{u}')
+	if [ "$behind" -gt 0 ]; then
+		echo "release: branch is behind upstream; pull first" >&2
+		exit 1
+	fi
+fi
+
 cur=$(current_version)
+sty_version_matches_tag "$cur"
 next=$(bump_version "$bump" "$cur")
 tag=v$next
 
@@ -169,4 +179,4 @@ git tag -a "$tag" -m "Release $tag"
 
 echo "Created commit and tag $tag (was $(normalize_version "$cur"))."
 echo "Push with:"
-echo "  git push origin main --tags"
+echo "  git push origin HEAD $tag"
